@@ -78,12 +78,57 @@ initial.add_statement("""
 
 initial.add_statement("""
     create_table strava_segments(
+        strava_segment_id serial primary key,
+        resource_state int,
+        name varchar(200),
+        activity_type varchar(100),
+        distance float,
+        average_grade float,
+        maxiumum_grade float,
+        elevation_high float,
+        elevation_low float,
+        start_lat float,
+        start_long float,
+        end_lat float,
+        end_long float,
+        climb_category int,
+        city varchar(200),
+        state varchar(100),
+        country charchar(200),
+        private bool,
+        starred bool,
+        created_at timestamp,
+        updated_at timestamp,
+        total_elevation_game float,
+        effort_count int,
+        athlete_count int,
+        hazardous bool,
+        star_count int
     )
 """)
 
 
 initial.add_statement("""
     create_table strava_activity_segment_effort(
+        strava_activity_segment_effort_id serial primary key,
+        strava_activity_id references strava_activities(strava_activity_id),
+        resource_state int,
+        name varchar(100),
+        elapsed_time int,
+        moving_time int,
+        start_datetime timestamp,
+        end_datetime timestamp,
+        start_index bigint,
+        end_index bigint,
+        average_cadence float,
+        average_watts float,
+        device_watts bool,
+        average_heartrate float,
+        max_heartrate float,
+        segment references strava_segments(strava_segment_id)
+        kom_rank int,
+        pr_rank int,
+        hidden bool
     )
 """)
 
