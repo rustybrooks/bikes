@@ -14,8 +14,8 @@ filterwarnings('ignore', message='Duplicate entry')
 
 initial = Migration(1, "initial version")
 for table in [
-    'strava_power_curvee', 'strava_speed_curve', 'strava_segment_history', 'strava_segment_history_summarye',
-    'strava_activity_segment_effor_ach', 'strava_activity_segment_effort', 'strava_segments'
+    'strava_power_curves', 'strava_speed_curves', 'strava_segment_histories', 'strava_segment_history_summaries',
+    'strava_activity_segment_effor_achs', 'strava_activity_segment_efforts', 'strava_segments'
     'strava_activities', 'users'
 ]:
     initial.add_statement("drop table if exists {}".format(table))
@@ -109,7 +109,7 @@ initial.add_statement("""
 
 
 initial.add_statement("""
-    create_table strava_activity_segment_effort(
+    create_table strava_activity_segment_efforts(
         strava_activity_segment_effort_id serial primary key,
         strava_activity_id references strava_activities(strava_activity_id),
         resource_state int,
@@ -134,37 +134,78 @@ initial.add_statement("""
 
 
 initial.add_statement("""
-    create_table strava_activity_segment_effort_ach(
+    create_table strava_activity_segment_effort_achs(
+        strava_activity_segment_effort_ach_id bigserial primary key
+        strava_activity_segment_effort_id integer not null references strava_activity_segments(strava_activity_segment_effort_id)
+        type_id integer not null,
+        type varchar(100),
+        rank integer not null
     )
 """)
 
 
 
 initial.add_statement("""
-    create_table strava_activity_stream(
+    create_table strava_activity_streams(
+        strava_activity_stream_id bigserial primary key,
+        strava_activity_id bigint not null strava_activities(strava_activity_id),
+        time timestamp not null,
+        lat float not null,
+        long float not null,
+        distance float not null,
+        altitude float not null,
+        velocity_smooth float not null,
+        heartrate float not null,
+        cadence float not null,
+        watts float not null,
+        temp float not null,
+        moving bool not null,
+        grade_smooth float not null
     )
 """)
 
 
 initial.add_statement("""
-    create_table strava_segment_history_summary(
+    create_table strava_segment_history_summaries(
+        strava_segment_history_summary_id bigserial primary key,
+        strava_segment_id integer not null references strava_segments(strava_segment_id),
+        strava_activity integer not null references strava_activities(strava_activity_id) 
     )
 """)
 
 
 initial.add_statement("""
-    create_table strava_segment_history(
+    create_table strava_segment_histories(
+        strava_segment_history_id bigserial primary key,
+        strava_segment_id bigint not null references strava_segments(strava_segment_id)
+        strava_activities bigint not null references strava_activities(strava_activity_id)
+        recorded_datetime timestamp not null,
+        rank int not null,
+        entries int not null,
+        average_heartrate float,
+        average_watts float,
+        distance float,
+        elapsed_time int not null,
+        moving_time int not null
     )
 """)
 
 initial.add_statement("""
     create_table strava_power_curve(
+        strava_power_curve_id bigserial primary key,
+        interval_length int not null,
+        watts float not null,
+        strava_activity_id integer not null references strava_activities(strava_activity_id)
     )
 """)
 
 
 initial.add_statement("""
     create_table strava_speed_curve(
+        strava_power_curve_id bigserial primary key,
+        interval_length int not null,
+        speed float not null,
+        strava_activity_id integer not null references strava_activities(strava_activity_id)
     )
 """)
 
