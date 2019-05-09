@@ -23,10 +23,26 @@ services:
     environment:
       - ENVIRONMENT=dev
       - DATA_ROOT=/srv/data
-      - API_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiIyNWRmMGVlMC0xOGRiLTAxMzYtNWY4MC00ZmM4YmMzYjI1ZjkiLCJpc3MiOiJnYW1lbG9ja2VyIiwiaWF0IjoxNTIyNjk3ODI1LCJwdWIiOiJibHVlaG9sZSIsInRpdGxlIjoicHViZyIsImFwcCI6ImZsYW5uZWxjYXQiLCJzY29wZSI6ImNvbW11bml0eSIsImxpbWl0IjoxMH0.B3LGedfCkDAtvM8o5gZjDoQIituH_6L5mqLY489BWPQ
-      - ASSET_DIR=/srv/src/pubg_assets/
 
-#  bikes-buildui:
+  bikes-bikedb:
+    build:
+      context: ./src/
+      dockerfile: bikedb/Dockerfile
+    image: bikes-bikedb:latest
+    container_name: bikes-bikedb
+    volumes:
+      - ./data/:/srv/data
+      - ./src/:/srv/src
+    links:
+      - postgres:local-bikedb-postgres.aveng.us
+    environment:
+      - ENVIRONMENT=dev
+      - DATA_ROOT=/srv/data
+      - FLASK_STORAGE=0
+    ports:
+        - 3306:3306
+
+    #  bikes-buildui:
 #    build:
 #      context: ./src/
 #      dockerfile: ui/Dockerfile
