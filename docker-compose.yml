@@ -1,0 +1,48 @@
+version: '2'
+
+services:
+  bikes-api:
+    build:
+      context: ./src/
+      dockerfile: api/Dockerfile
+    image: bikes-api:latest
+    container_name: bikes-api
+    links:
+      - postgres:local-bikes-postgres.aveng.us
+    ports:
+      - 5000:5000
+    volumes:
+      - ./data/:/srv/data
+      - ./src/:/srv/src/
+    environment:
+      - ENVIRONMENT=dev
+      - DATA_ROOT=/srv/data
+      - API_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJqdGkiOiIyNWRmMGVlMC0xOGRiLTAxMzYtNWY4MC00ZmM4YmMzYjI1ZjkiLCJpc3MiOiJnYW1lbG9ja2VyIiwiaWF0IjoxNTIyNjk3ODI1LCJwdWIiOiJibHVlaG9sZSIsInRpdGxlIjoicHViZyIsImFwcCI6ImZsYW5uZWxjYXQiLCJzY29wZSI6ImNvbW11bml0eSIsImxpbWl0IjoxMH0.B3LGedfCkDAtvM8o5gZjDoQIituH_6L5mqLY489BWPQ
+      - ASSET_DIR=/srv/src/pubg_assets/
+
+#  bikes-buildui:
+#    build:
+#      context: ./src/
+#      dockerfile: ui/Dockerfile
+#    image: bikes-ui:latest
+#    container_name: bikes-buildui
+#    volumes:
+#      - ./data/:/srv/data
+#      - ./src/:/srv/src
+#    environment:
+#      - ENVIRONMENT=dev
+#    ports:
+#        - 3000:3000
+
+  postgres:
+    image: postgres:10.6
+    restart: always
+    environment:
+      - POSTGRES_DB=bikes
+      - POSTGRES_USER=wombat
+      - POSTGRES_PASSWORD=1wombat2
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data/pgdata
+    ports:
+      - 5432:5432

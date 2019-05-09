@@ -1,0 +1,15 @@
+python-dateutil
+pytz
+sqlalchemy
+flask
+gevent
+gunicorn
+#appenlight-client 
+#blinker
+psycopg2-binary
+#geojson
+# numpy
+# heatmap
+# pillow
+flask-cors
+
