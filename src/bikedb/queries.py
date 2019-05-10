@@ -35,7 +35,7 @@ def SQLFactory(sql_url=None, flask_storage=False):
 
 
 if config.get_config_key('ENVIRONMENT') == 'dev':
-    sql_url = "postgresql://wombat:1wombat2@local-bikedb-postgres.aveng.us:5432/bikes"
+    sql_url = "postgresql://wombat:1wombat2@local-bikes-postgres.aveng.us:5432/bikes"
 else:
     sql_url = 'postgresql://bikedb:{}@flannelcat-postgres.cwrbtizazqua.us-west-2.rds.amazonaws.com:5432/bikes'.format(
         config.get_config_key('DB_PASSWORD')
@@ -46,7 +46,7 @@ SQL = SQLFactory(sql_url, flask_storage=os.environ.get('FLASK_STORAGE', "1'") !=
 
 class User(object):
     def __unicode__(self):
-        return u"MetaUser(username={}, user_id={})".format(getattr(self, 'username'), getattr(self, 'id'))
+        return u"User(username={}, user_id={})".format(getattr(self, 'username'), getattr(self, 'user_id'))
 
     def __str__(self):
         return self.__unicode__()
@@ -59,8 +59,8 @@ class User(object):
             'user_id': self.user_id,
         }
 
-    def __init__(self, user_id=None, username=None, email=None, password=None):
-        self.is_authenticated = False
+    def __init__(self, user_id=None, username=None, email=None, password=None, is_authenticated=False):
+        self.is_authenticated = is_authenticated
         self.is_active = False
         self.is_anonymous = False
         self.user_id = 0
@@ -74,12 +74,14 @@ class User(object):
             for k, v in r.items():
                 setattr(self, k, v)
 
-            self.authenticate(password)
+            if password is not None:
+                self.authenticate(password)
 
     def authenticate(self, password):
         salt = self.password[:29].encode('utf-8')
         genpass = self.generate_password_hash(password, salt)
         ourpass = bytes(self.password.encode('utf-8'))
+        logger.warning("%r salt=%r, ourpass=%r, genpass=%r", password, salt, ourpass, genpass)
         self.is_authenticated = ourpass and (genpass == ourpass)
         self.is_active = self.is_authenticated
         return self.is_authenticated

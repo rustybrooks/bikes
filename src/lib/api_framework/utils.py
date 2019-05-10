@@ -1,4 +1,4 @@
-# import bson
+import bson
 from collections import defaultdict
 import copy
 import datetime
@@ -11,6 +11,7 @@ import logging
 # import newrelic.agent
 import os
 import pytz
+import types
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,8 @@ class OurJSONEncoder(json.JSONEncoder):
             return obj.to_json()
         elif isinstance(obj, datetime.datetime):
             return obj.isoformat()
-        # elif isinstance(obj, bson.ObjectId):
-        #     return str(obj)
+        elif isinstance(obj, bson.ObjectId):
+            return str(obj)
         elif isinstance(obj, decimal.Decimal):
             return float(obj)
 
@@ -95,6 +96,10 @@ class Api(object):
         default_detail = "Not Acceptable"
         status_code = 406
 
+    class TooManyRequests(APIException):
+        default_detail = "Too Many Requests"
+        status_code = 429
+
     def __init__(self):
         pass
 
@@ -126,7 +131,7 @@ class Api(object):
         argspec = inspect.getargspec(cls._unwrap(fn))
         border = len(argspec.args or []) - len(argspec.defaults or [])
         list_args = argspec.args[:border]
-        keyword_args = list(zip(argspec.args[border:], argspec.defaults or []))
+        keyword_args = zip(argspec.args[border:], argspec.defaults or [])
         return [x for x in list_args if x not in ['self', 'cls']], keyword_args, argspec.varargs, argspec.keywords
 
     @classmethod
@@ -172,6 +177,7 @@ class Api(object):
 
         self.registry[new_function_name] = app.registry[function_name]
 
+
 def api_register(_version=None, **register_kwargs):
     ignore = ['config']
 
@@ -192,7 +198,6 @@ def api_register(_version=None, **register_kwargs):
                 if k in ignore:
                     continue
 
-                # unwrapped = cls._unwrap(v.im_func)
                 unwrapped = cls._unwrap(v.__func__)
                 individual_config = fn_config[unwrapped]
 
@@ -205,16 +210,16 @@ def api_register(_version=None, **register_kwargs):
                     'param_regexp_map': {},
                     'sort_keys': None,
                     'max_page_limit': -1,
+                    'max_page': -1,
+                    'file_keys': None,
                 }
 
                 fn_config[unwrapped].update(register_kwargs)
                 fn_config[unwrapped].update(individual_config)
                 fn_config[unwrapped].update({
                     'version': _version,
-                    # 'fn_args': cls._get_args(v.im_func)
                     'fn_args': cls._get_args(v.__func__)
                 })
-                # version_fun[_version][k] = v.im_func
                 version_fun[_version][k] = v.__func__
                 registry[k] = v
 
@@ -237,7 +242,12 @@ def route_pieces(fnname, fn, config, canonical=False):
 
     api_key = config.get('api_key')
 
-    if isinstance(api_key, str):
+    try:
+        isstr = isinstance(api_key, basestring)
+    except NameError:
+        isstr = isinstance(api_key, str)
+
+    if isstr:
         api_key = [api_key]
 
     api_key_in_list = False
@@ -304,6 +314,7 @@ def urls_from_config(urlroot, fnname, fn, config, canonical=False):
 
 sentinel = object()
 
+
 # @newrelic.agent.function_trace()
 def process_api(fn, api_object, app_blob, blob):
     api_data_orig = blob['api_data']
@@ -332,6 +343,12 @@ def process_api(fn, api_object, app_blob, blob):
                 if val is not sentinel:
                     if arg == 'limit' and app_blob['_config']['max_page_limit'] > 0:
                         val = min(val, app_blob['_config']['max_page_limit'])
+                    elif arg == 'page' and val > app_blob['_config'].get('max_page', -1) > 0:
+                        raise Api.BadRequest(
+                            "Maximum allowed value for page parameter for this endpoint is {}".format(
+                                app_blob['_config']['max_page']
+                            )
+                        )
                     elif arg == 'sort' and val and app_blob['_config']['sort_keys'] is not None:
                         sortkey = val
                         if sortkey[0] == '-':
@@ -355,12 +372,26 @@ def process_api(fn, api_object, app_blob, blob):
 
         retval = fn(api_object, *blob['fn_args'], **fn_kwargs)
     except Api.APIException as e:
-        if isinstance(e.detail, str):
+        try:
+            isstr = isinstance(e.detail, basestring)
+        except NameError:
+            isstr = isinstance(e.detail, str)
+
+        if isstr:
             data = {
                 'detail': e.detail,
             }
         else:
             data = e.detail
+
+        logger.warn(
+            "APIException thrown: code=%r, url=%r, urlparams=%r, post body=%r, response=%r",
+            e.status_code,
+            blob['path'],
+            blob['url_data'],
+            blob['api_data'],
+            data
+        )
 
         retval = JSONResponse(
             data=data,
@@ -423,21 +454,14 @@ class FrameworkApi(Api):
                     fn = app._fn(fnname, version)
                     config = app._get_config(fn)
 
-                    _require_login = config.get('require_login', False)
-                    _require_admin = config.get('require_admin', False)
-
-                    # ensure user is logged in if required
-                    # if _require_login or _require_admin:
-                    #     if _user is None or not _user.is_authenticated():
-                    #         continue
-
                     # ensure user is admin if required
-                    if _require_admin and (not _user.is_authenticated() or not _user.is_staff):
+                    if config.get('require_admin', False) and (not _user.is_authenticated() or not _user.is_staff):
                         continue
 
                     urls = urls_from_config(urlroot, fnname, fn, config, canonical=True)
                     list_args, key_args, va, kw = config['fn_args']
 
+                    config['require_login'] = bool(config.get('require_login', False))  # require_login can be a function in some cases
                     this = {
                         'app': app.class_name,
                         'function': fnname,
@@ -454,27 +478,19 @@ class FrameworkApi(Api):
         return data
 
 
-def api_list(val, split=','):
-    if val is None:
-        return None
-
-    if isinstance(val, (tuple, list)):
-        return val
-
-    return val.split(split)
-
-
 def api_bool(val):
     if val is None:
         return None
 
-    if isinstance(val, bool):
+    if isinstance(val, types.BooleanType):
         return val
-    elif isinstance(val, int):
+    elif isinstance(val, (int, long)):
         return bool(val)
 
     if val.lower() == "true":
         return True
+    elif val.lower() == "none":
+        return None
 
     try:
         val = int(val)
@@ -512,6 +528,16 @@ def api_datetime(dtstr, default=None):
     return dt or default
 
 
+def api_list(liststr):
+    if liststr is None:
+        return None
+
+    if isinstance(liststr, list):
+        return liststr
+
+    return liststr.split(',')
+
+
 def test_sort_param():
     missing_sort = []
     for urlroot, app in app_registry.items():
@@ -526,6 +552,7 @@ def test_sort_param():
                     missing_sort += [[app.class_name, fnname]]
 
     return missing_sort
+
 
 def test_limit_param():
     missing_limit = []

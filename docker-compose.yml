@@ -34,7 +34,7 @@ services:
       - ./data/:/srv/data
       - ./src/:/srv/src
     links:
-      - postgres:local-bikedb-postgres.aveng.us
+      - postgres:local-bikes-postgres.aveng.us
     environment:
       - ENVIRONMENT=dev
       - DATA_ROOT=/srv/data
