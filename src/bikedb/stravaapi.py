@@ -125,7 +125,7 @@ def self(user):
     return strava_fetch(user, url)
 
 
-def get_activities(user, after=None, before=None, page=1, per_page=30):
+def get_activities(user, after=None, before=None, page=1, per_page=100):
     url = build_url(['athlete', 'activities'])
     kwargs = {}
     if after is not None:
@@ -277,7 +277,7 @@ def activity_segment_effort_sync_one(activity, segment):
 
 def segment_sync_one(segment):
     segment_id = segment['id']
-    logger.warning("Syncing segment %r", segment_id)
+    # logger.warning("Syncing segment %r", segment_id)
     seg = queries.segment(strava_segment_id=segment_id)
     new = not bool(seg)
     if not seg:

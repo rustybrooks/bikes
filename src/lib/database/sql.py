@@ -489,7 +489,6 @@ class SQLConn(object):
             sets=set_vals,
             where=u'where {}'.format(where) if len(where) else '',
         )
-        logger.warn("%r - %r", query, bindvars)
         with self.cursor() as c:
             rs = c.execute(text(query), bindvars)
             return rs.rowcount
