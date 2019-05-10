@@ -38,3 +38,40 @@ else:
     )
 
 SQL = SQLFactory(sql_url, flask_storage=os.environ.get('FLASK_STORAGE', "1'") != "0")
+
+
+class User(object):
+    def __unicode__(self):
+        return u"MetaUser(username={}, user_id={})".format(getattr(self, 'username'), getattr(self, 'id'))
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __repr__(self):
+        return self.__unicode__()
+
+    def to_json(self):
+        return {
+            'user_id': self.user_id,
+        }
+
+    def __init__(self, user_id=None, username=None, email=None):
+        where, bindvars = SQL.auto_where(username=username, user_id=user_id, email=email)
+
+        query = """
+            select * from auth_user au
+            left join users u on (au.id=u.user_id)
+            {}
+        """.format(SQL.where_clause(where))
+        r = SQL.select_0or1(query, bindvars)
+
+        for k, v in r.items():
+            setattr(self, k, v)
+
+        self.is_authenticated = True
+        self.is_active = True
+        self.is_anonymous = False
+
+    def get_id(self):
+        return str(self.user_id)
+

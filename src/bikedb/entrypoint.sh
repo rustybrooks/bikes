@@ -2,7 +2,7 @@
 
 cd /srv/src
 
-sleep 2
+sleep 15
 ./bikedb/run.py --migrate
 
 while true; do

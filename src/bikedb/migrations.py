@@ -24,6 +24,8 @@ for table in [
 initial.add_statement("""
     create table users(
         user_id serial primary key,
+        username varchar(50),
+        email varchar(200),
         access_token varchar(100),
         refresh_token varchar(100),
         expires_at timestamp
