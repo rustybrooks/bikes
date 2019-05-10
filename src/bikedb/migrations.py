@@ -2,7 +2,6 @@
 
 import logging
 from warnings import filterwarnings
-import psycopg2
 
 from lib.database.sql import Migration
 
@@ -14,9 +13,10 @@ filterwarnings('ignore', message='Duplicate entry')
 
 initial = Migration(1, "initial version")
 for table in [
-    'strava_power_curves', 'strava_speed_curves', 'strava_segment_histories', 'strava_segment_history_summaries',
+    'strava_power_curves', 'strava_speed_curves',
+    'strava_segment_histories', 'strava_segment_history_summaries',
     'strava_activity_segment_effort_achs', 'strava_activity_segment_efforts', 'strava_segments',
-    'strava_activities', 'users'
+    'strava_activity_streams', 'strava_activities', 'users'
 ]:
     initial.add_statement("drop table if exists {}".format(table))
 
@@ -24,8 +24,9 @@ for table in [
 initial.add_statement("""
     create table users(
         user_id serial primary key,
-        username varchar(50),
+        password varchar(200),
         email varchar(200),
+        username varchar(50),
         access_token varchar(100),
         refresh_token varchar(100),
         expires_at timestamp
@@ -196,7 +197,7 @@ initial.add_statement("""
 """)
 
 initial.add_statement("""
-    create table strava_power_curve(
+    create table strava_power_curves(
         strava_power_curve_id bigserial primary key,
         interval_length int not null,
         watts real not null,
@@ -206,7 +207,7 @@ initial.add_statement("""
 
 
 initial.add_statement("""
-    create table strava_speed_curve(
+    create table strava_speed_curves(
         strava_power_curve_id bigserial primary key,
         interval_length int not null,
         speed real not null,

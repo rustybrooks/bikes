@@ -1,5 +1,9 @@
+import bcrypt
+import hashlib
 import logging
 import os
+import random
+
 from lib.database.sql import SQLBase, dictobj, chunked
 from lib import config
 
@@ -55,23 +59,48 @@ class User(object):
             'user_id': self.user_id,
         }
 
-    def __init__(self, user_id=None, username=None, email=None):
+    def __init__(self, user_id=None, username=None, email=None, password=None):
+        self.is_authenticated = False
+        self.is_active = False
+        self.is_anonymous = False
+        self.user_id = 0
+
         where, bindvars = SQL.auto_where(username=username, user_id=user_id, email=email)
 
-        query = """
-            select * from auth_user au
-            left join users u on (au.id=u.user_id)
-            {}
-        """.format(SQL.where_clause(where))
+        query = "select * from users {}".format(SQL.where_clause(where))
         r = SQL.select_0or1(query, bindvars)
 
-        for k, v in r.items():
-            setattr(self, k, v)
+        if r:
+            for k, v in r.items():
+                setattr(self, k, v)
 
-        self.is_authenticated = True
-        self.is_active = True
-        self.is_anonymous = False
+            self.authenticate(password)
+
+    def authenticate(self, password):
+        salt = self.password[:29].encode('utf-8')
+        genpass = self.generate_password_hash(password, salt)
+        ourpass = bytes(self.password.encode('utf-8'))
+        self.is_authenticated = ourpass and (genpass == ourpass)
+        self.is_active = self.is_authenticated
+        return self.is_authenticated
+
+    @classmethod
+    def generate_password_hash(cls, password, salt):
+        return bcrypt.hashpw(password.encode('utf-8'), salt)
 
     def get_id(self):
         return str(self.user_id)
 
+
+def add_user(username=None, email=None, password=None):
+    salt = bcrypt.gensalt(12)
+    return SQL.insert('users', {
+        'username': username,
+        'email': email,
+        'password': User.generate_password_hash(password, salt).decode('utf-8'),
+    })
+
+
+def delete_user(username=None, email=None):
+    where, bindvars = SQL.auto_where(username=username, email=email)
+    SQL.delete('users', where, bindvars)
