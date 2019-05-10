@@ -1,15 +1,15 @@
+import datetime
 import logging
 import os
+import pytz
 import requests
 import urllib.parse
 
-
+from . import queries
 
 logger = logging.getLogger(__name__)
 
 
-client_id = 9981
-client_secret = "95fffa4745f641a3eeae5d073ad870ce4680e37e"
 
 
 class NoAuthCode(Exception):
@@ -151,3 +151,71 @@ def activity_stream(user, activity_id):
 def segment_leaderboard(user, segment_id):
     url = build_url(['segments', str(segment_id), 'leaderboard'])
     return strava_fetch(user, url)
+
+
+#########################
+
+def tznow():
+    return pytz.utc.localize(datetime.datetime.utcnow())
+
+
+def activities_sync_one(user, activity, full=False, rebuild=False):
+    activity_id = activity['id']
+    act =
+    actlist = cls.objects.filter(activity_id=activity_id)
+
+    # If we already have this one, let's not resync
+    if len(actlist) and not rebuild:
+        return
+
+    if 'segment_efforts' not in activity and full:
+        return cls.sync_one(user, stravaapi.activity(user, activity['id']))
+
+    new = False
+    if len(actlist):
+        act = actlist[0]
+    else:
+        act = StravaActivity()
+        act.activity_id = activity_id
+        act.user = user
+        new = True
+
+    for key in [
+        'external_id', 'upload_id', 'activity_name', 'distance', 'moving_time',
+        'elapsed_time', 'total_elevation_gain', 'elev_high', 'elev_low', 'type', 'timezone',
+        'achievement_count', 'athlete_count', 'trainer', 'commute', 'manual', 'private', 'embed_token',
+        'workout_type', 'gear_id', 'average_speed', 'max_speed', 'average_cadence', 'average_temp', 'average_watts',
+        'max_watts', 'weighted_average_watts', 'kilojoules', 'device_watts', 'average_heartrate', 'max_heartrate',
+        'suffer_score', 'flagged'
+    ]:
+        setattr(act, key, activity.get(key))
+
+    act.athlete_id = activity['athlete']['id']
+
+    act.start_datetime = activity['start_date']
+    act.start_datetime_local = activity['start_date_local']
+
+    act.start_lat = activity['start_latlng'][0] if activity['start_latlng'] else None
+    act.start_long = activity['start_latlng'][1] if activity['start_latlng'] else None
+    act.end_lat = activity['end_latlng'][0] if activity['end_latlng'] else None
+    act.end_long = activity['end_latlng'][1] if activity['end_latlng'] else None
+
+    act.save()
+
+    if 'segment_efforts' in activity:
+        for e in activity.get('segment_efforts', []):
+            effort = StravaActivitySegmentEffort.sync_one(act, e)
+
+            if new:
+                StravaSegmentHistory.sync_one(user, effort.segment_id, act.athlete_id)
+
+    StravaActivityStream.sync(user, act)
+
+    return act
+
+
+def activities_sync_many(user):
+    first_date = tznow() - datetime.timedelta(days=14)
+
+    for act in activities(user, after=first_date):
+        activities_sync_one(user, act, full=True)

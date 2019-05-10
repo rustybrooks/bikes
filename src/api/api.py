@@ -1,16 +1,15 @@
 import datetime
 from flask import Flask, request, render_template, session, redirect, url_for, escape
-
 import logging
 import os
+import time
 
 from lib import api_framework, config
 from lib.api_framework import api_register, Api, HttpResponse, api_bool
 from flask_cors import CORS
 import flask_login
 
-from bikedb import queries
-from . import stravaapi
+from bikedb import queries, stravaapi
 
 root = os.path.join(os.path.dirname(__file__))
 
@@ -87,6 +86,20 @@ class Interface(Api):
         )
 
         return "{} - {} - {}".format(access_token, refresh_token, expires_at)
+
+    @classmethod
+    def strava_update(cls, _user=None):
+        first_date = datetime.datetime.utcnow() - datetime.timedelta(days=14)
+
+        activities = stravaapi.activities(_user, after=first_date)
+        for act in activities:
+            cls.sync_one(user, act, full=True)
+
+        # models.StravaActivity.sync_many(request.user)
+        # updated = models.StravaActivity.update_curves()
+
+
+        return "done"
 
     @classmethod
     @Api.config(require_login=is_logged_in)

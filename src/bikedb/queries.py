@@ -115,3 +115,21 @@ def update_user(user_id=None, refresh_token=None, access_token=None, expires_at=
 def delete_user(username=None, email=None):
     where, bindvars = SQL.auto_where(username=username, email=email)
     SQL.delete('users', where, bindvars)
+
+
+
+##############################################################
+# activities
+
+def activities(activity_id=None):
+    where, bindvars = SQL.auto_where(activity_id=activity_id)
+    query = "select * from activities {}".format(SQL.where_clause(where))
+    return list(SQL.select_foreach(query, bindvars))
+
+
+def activity(activity_id=None):
+    acts = activities(activity_id=activity_id)
+    if len(acts) > 1:
+        raise Exception("Expected 0 or 1 result, found {}".format(len(acts)))
+
+    return acts[0] if acts else None
