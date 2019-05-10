@@ -30,13 +30,11 @@ login_manager.init_app(app)
 
 
 def is_logged_in(request, api_data, url_data):
-    logger.warning("current user %r", flask_login.current_user)
     return flask_login.current_user
 
 
 @login_manager.user_loader
 def load_user(user_id):
-    logger.warning("load_user user_id=%r", user_id)
     return User(user_id=user_id, is_authenticated=True)
 
 
@@ -50,7 +48,6 @@ class Interface(Api):
     def login(cls, username=None, password=None):
         if username and password:
             user = User(username=username, password=password)
-            logger.warn("user=%r/%r, auth=%r", user.username, user.password, user.is_authenticated)
             if user.is_authenticated:
                 flask_login.login_user(user)
             else:

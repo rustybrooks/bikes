@@ -117,21 +117,15 @@ def app_proxy(sa, fn, fnname, config, urlroot, cleanup_callback=None):
             'user': login_fn(request=request, api_data=api_data, url_data=url_data)
         }
 
-        logger.warning("blob = %r", blob)
-
         # ensure user is logged in if required
         if (_require_login or _require_admin):
             if not blob['user']:
                 return JSONResponse(detail='Authentication required', status=403)
 
             if callable(blob['user'].is_authenticated):
-                logger.warn("callable")
                 ia = blob['user'].is_authenticated()
             else:
-                logger.warn("not callable")
                 ia = blob['user'].is_authenticated
-
-            logger.warn("ia = %r", ia)
 
             if not ia:
                 return JSONResponse(detail='Authentication required', status=403)
