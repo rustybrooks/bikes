@@ -1,10 +1,9 @@
 import logging
 import os
 import requests
-import urllib
+import urllib.parse
 
-# from . import models
-from . import queries
+
 
 logger = logging.getLogger(__name__)
 
@@ -23,26 +22,18 @@ class StravaError(Exception):
 
 
 def get_auth_code(user):
-    try:
-        token_obj = models.StravaTokens.objects.filter(user=user).first()
-        logger.warn("token_obj = %r", token_obj)
-        if not token_obj:
-            raise NoAuthCode(user)
-
-        return token_obj.auth_key
-    except KeyError:
-        raise NoAuthCode(user)
+    return user.access_token
 
     
-def redirect_token(return_to_url):
+def redirect_token(return_to_url='/'):
     if os.getenv('ENVIRONMENT', "dev") == "dev":
-        redirect_uri = 'http://localhost:5000/stravacallback'
+        redirect_uri = 'http://localhost:5000/strava_callback'
     else:
-        redirect_uri = "http://bike.rustybrooks.com/stravacallback"
+        redirect_uri = "http://bike.rustybrooks.com/strava_callback"
 
     authorize_url = 'https://www.strava.com/oauth/authorize'
     authorize_url += "?"
-    authorize_url += urllib.urlencode({
+    authorize_url += urllib.parse.urlencode({
         'client_id': client_id,
         'response_type': 'code',
         'redirect_uri': redirect_uri,
@@ -53,7 +44,7 @@ def redirect_token(return_to_url):
     return authorize_url
 
 
-def get_token(code, user):
+def get_token(code):
     access_token_url = 'https://www.strava.com/oauth/token'
     access_token_data = {
         'client_id': client_id,
@@ -64,20 +55,21 @@ def get_token(code, user):
     response = requests.post(
         url=access_token_url,
         data=access_token_data,
-        headers={'Api-Key': client_id}
+        headers={'Api-Key': str(client_id)}
     )
 
-    token = response.json()['access_token']
+    data = response.json()
+    return data['access_token'], data['refresh_token'], data['expires_at']
 
-    token_obj = models.StravaTokens.objects.filter(user=user).first()
-    if token_obj:
-        token_obj.auth_key = token
-    else:
-        token_obj = models.StravaTokens()
-        token_obj.user = user
-        token_obj.auth_key = token
-
-    token_obj.save()
+    # token_obj = models.StravaTokens.objects.filter(user=user).first()
+    # if token_obj:
+    #     token_obj.auth_key = token
+    # else:
+    #     token_obj = models.StravaTokens()
+    #     token_obj.user = user
+    #     token_obj.auth_key = token
+    #
+    # token_obj.save()
 
     return token
 
@@ -94,22 +86,11 @@ def refresh_token(user):
     response = requests.post(
         url=access_token_url,
         data=access_token_data,
-        headers={'Api-Key': client_id}
+        headers={'Api-Key': str(client_id)}
     )
 
-    token = response.json()['access_token']
-
-    token_obj = models.StravaTokens.objects.filter(user=user).first()
-    if token_obj:
-        token_obj.auth_key = token
-    else:
-        token_obj = models.StravaTokens()
-        token_obj.user = user
-        token_obj.auth_key = token
-
-    token_obj.save()
-
-    return token
+    data = response.json()
+    return data['access_token'], data['refresh_token'], data['expires_at']
 
 
 def build_url(pieces):
@@ -120,14 +101,15 @@ def build_url(pieces):
     return url
 
 
-def strava_fetch(user_obj, url, **kwargs):
-    url_args = ("?" + urllib.urlencode(kwargs)) if len(kwargs) else ''
+def strava_fetch(user, url, **kwargs):
+    url_args = ("?" + urllib.parse.urlencode(kwargs)) if len(kwargs) else ''
     full_url = url + url_args
     logger.info(full_url)
-    response = requests.get(url=full_url,
-                            verify=False,
-                            headers={'api-key': client_id, 'authorization': 'Bearer %s' % get_auth_code(user_obj)}
-                            )
+    response = requests.get(
+        url=full_url,
+        verify=False,
+        headers={'api-key': str(client_id), 'authorization': 'Bearer %s' % get_auth_code(user)}
+    )
     ourjson = response.json()
 
     if isinstance(ourjson, dict) and 'errors' in ourjson:

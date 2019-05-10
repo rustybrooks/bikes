@@ -1,5 +1,4 @@
-from collections import defaultdict
-import copy
+import datetime
 from flask import Flask, request, render_template, session, redirect, url_for, escape
 
 import logging
@@ -10,7 +9,8 @@ from lib.api_framework import api_register, Api, HttpResponse, api_bool
 from flask_cors import CORS
 import flask_login
 
-from bikedb.queries import User
+from bikedb import queries
+from . import stravaapi
 
 root = os.path.join(os.path.dirname(__file__))
 
@@ -35,19 +35,20 @@ def is_logged_in(request, api_data, url_data):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User(user_id=user_id, is_authenticated=True)
+    return queries.User(user_id=user_id, is_authenticated=True)
 
 
-@api_register(None, require_login=False)
+@api_register(None, require_login=is_logged_in)
 class Interface(Api):
     @classmethod
     def index(cls):
         return HttpResponse(render_template('index.html'))
 
     @classmethod
+    @Api.config(require_login=False)
     def login(cls, username=None, password=None):
         if username and password:
-            user = User(username=username, password=password)
+            user = queries.User(username=username, password=password)
             if user.is_authenticated:
                 flask_login.login_user(user)
             else:
@@ -56,8 +57,36 @@ class Interface(Api):
             return HttpResponse(render_template('login.html'))
 
     @classmethod
-    def stravacallback(cls):
-        return {}
+    def strava_connect(cls):
+        authorize_url = stravaapi.redirect_token()
+        r = redirect(authorize_url)
+        return HttpResponse(content=r.response, status=r.status, content_type=r.content_type)
+
+    @classmethod
+    def strava_callback(cls, code=None, state=None, _user=None):
+        access_token, refresh_token, expires_at = stravaapi.get_token(code)
+        logger.warn("access_token = %r, refresh_token = %r, expires_at = %r", access_token, refresh_token, expires_at)
+        queries.update_user(
+            user_id=_user.user_id,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_at=datetime.datetime.utcfromtimestamp(expires_at),
+        )
+        r = redirect(state)
+        return HttpResponse(content=r.response, status=r.status, content_type=r.content_type)
+
+    @classmethod
+    def strava_refresh(cls, _user=None):
+        access_token, refresh_token, expires_at = stravaapi.refresh_token(_user)
+        logger.warn("access_token = %r, refresh_token = %r, expires_at = %r", access_token, refresh_token, expires_at)
+        queries.update_user(
+            user_id=_user.user_id,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_at=datetime.datetime.utcfromtimestamp(expires_at),
+        )
+
+        return "{} - {} - {}".format(access_token, refresh_token, expires_at)
 
     @classmethod
     @Api.config(require_login=is_logged_in)

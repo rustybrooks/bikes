@@ -399,6 +399,7 @@ def process_api(fn, api_object, app_blob, blob):
         )
 
     # return results
+    logger.warn("retval = %r", retval.__class__)
     if isinstance(retval, (HttpResponse, FileResponse, JSONResponse)):
         return retval
 

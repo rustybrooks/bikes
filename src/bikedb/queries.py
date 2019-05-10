@@ -103,6 +103,15 @@ def add_user(username=None, email=None, password=None):
     })
 
 
+def update_user(user_id=None, refresh_token=None, access_token=None, expires_at=None):
+    data = {
+        'refresh_token': refresh_token,
+        'access_token': access_token,
+        'expires_at': expires_at
+    }
+    SQL.update('users', 'user_id=:user_id', where_data={'user_id': user_id}, data=data)
+
+
 def delete_user(username=None, email=None):
     where, bindvars = SQL.auto_where(username=username, email=email)
     SQL.delete('users', where, bindvars)

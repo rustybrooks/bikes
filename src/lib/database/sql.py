@@ -470,10 +470,10 @@ class SQLConn(object):
                 return count
 
     def update(self, table_name, where, data=None, where_data=None):
-        bindvars = [data[k] for k in sorted(data.keys())] + (where_data or [])
-        # bindvars = {}
-        # bindvars.update(data)
-        # bindvars.update(where_data or {})
+        # bindvars = [data[k] for k in sorted(data.keys())] + (where_data.keys() or [])
+        bindvars = {}
+        bindvars.update(data)
+        bindvars.update(where_data or {})
 
         if self.sql.mysql:
             # set_vals = u', '.join([u'{}=%({})s'.format(k, k) for k in sorted(data.keys())])
@@ -486,7 +486,7 @@ class SQLConn(object):
             sets=set_vals,
             where=u'where {}'.format(where) if len(where) else '',
         )
-
+        logger.warn("%r - %r", query, bindvars)
         with self.cursor() as c:
             rs = c.execute(text(query), bindvars)
             return rs.rowcount
