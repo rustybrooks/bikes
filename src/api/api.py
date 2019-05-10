@@ -89,16 +89,7 @@ class Interface(Api):
 
     @classmethod
     def strava_update(cls, _user=None):
-        first_date = datetime.datetime.utcnow() - datetime.timedelta(days=14)
-
-        activities = stravaapi.activities(_user, after=first_date)
-        for act in activities:
-            cls.sync_one(user, act, full=True)
-
-        # models.StravaActivity.sync_many(request.user)
-        # updated = models.StravaActivity.update_curves()
-
-
+        stravaapi.activities_sync_many(_user)
         return "done"
 
     @classmethod

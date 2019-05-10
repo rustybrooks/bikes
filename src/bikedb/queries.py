@@ -121,14 +121,14 @@ def delete_user(username=None, email=None):
 ##############################################################
 # activities
 
-def activities(activity_id=None):
-    where, bindvars = SQL.auto_where(activity_id=activity_id)
-    query = "select * from activities {}".format(SQL.where_clause(where))
+def activities(strava_activity_id=None):
+    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id)
+    query = "select * from strava_activities {}".format(SQL.where_clause(where))
     return list(SQL.select_foreach(query, bindvars))
 
 
-def activity(activity_id=None):
-    acts = activities(activity_id=activity_id)
+def activity(strava_activity_id=None):
+    acts = activities(strava_activity_id=strava_activity_id)
     if len(acts) > 1:
         raise Exception("Expected 0 or 1 result, found {}".format(len(acts)))
 
@@ -136,14 +136,14 @@ def activity(activity_id=None):
 
 
 def add_activity(data):
-    return SQL.insert('activities', data)
+    return SQL.insert('strava_activities', data)
 
 
-def update_activity(activity_id=None, data=None):
+def update_activity(strava_activity_id=None, data=None):
     return SQL.update(
-        'activities',
-        where='activity_id=:activity_id',
-        where_data={'activity_id': activity_id},
+        'strava_activities',
+        where='strava_activity_id=:strava_activity_id',
+        where_data={'strava_activity_id': strava_activity_id},
         data=data
     )
 
@@ -151,61 +151,44 @@ def update_activity(activity_id=None, data=None):
 ##############################################################
 # segments
 
-def segments(segment_id=None):
-    where, bindvars = SQL.auto_where(segment_id=segment_id)
-    query = "select * from segments {}".format(SQL.where_clause(where))
+def segments(strava_segment_id=None):
+    where, bindvars = SQL.auto_where(strava_segment_id=strava_segment_id)
+    query = "select * from strava_segments {}".format(SQL.where_clause(where))
     return list(SQL.select_foreach(query, bindvars))
 
-def segment(segment_id=None):
-    s = segments(segment_id=segment_id)
+
+def segment(strava_segment_id=None):
+    s = segments(strava_segment_id=strava_segment_id)
     if len(s) > 1:
         raise Exception("Expected 0 or 1 result, found {}".format(len(s)))
 
     return s[0] if s else None
 
+
 def add_segment(data):
-    SQL.insert('segments', data)
+    SQL.insert('strava_segments', data)
 
 
-def update_segment(segment_id=None, data=None):
+def update_segment(strava_segment_id=None, data=None):
     SQL.update(
-        'segments',
-        where="segment_id=:segment_id",
-        where_data={'segment_id': segment_id},
+        'strava_segments',
+        where="strava_segment_id=:strava_segment_id",
+        where_data={'strava_segment_id': strava_segment_id},
         data=data,
     )
 
 
 ##############################################################
-# segment_histories
-
-def add_segment_histories(data):
-    return SQL.insert('segment_history', data)
-
-##############################################################
-# segment_history_summaries
-
-def segment_history_summaries(segment_id=None):
-    where, bindvars = SQL.auto_where(segment_id=segment_id)
-    query = "select * from segment_history_summaries {}".format(SQL.where_clause(where))
-    return list(SQL.select_foreach(query, bindvars))
-
-def add_segment_history_summaries(data):
-    return SQL.insert('segment_history_summaries', data)
-
-
-
-##############################################################
 # activity_segment_efforts
 
-def activity_segment_efforts(activity_segment_effort_id=None):
-    where, bindvars = SQL.auto_where(activity_segment_effort_id=activity_segment_effort_id)
-    query = "select * from activity_segment_efforts {}".format(SQL.where_clause(where))
+def activity_segment_efforts(strava_segment_id=None, strava_activity_segment_effort_id=None):
+    where, bindvars = SQL.auto_where(strava_segment_id=strava_segment_id, strava_activity_segment_effort_id=strava_activity_segment_effort_id)
+    query = "select * from strava_activity_segment_efforts {}".format(SQL.where_clause(where))
     return list(SQL.select_foreach(query, bindvars))
 
 
-def activity_segment_effort(activity_segment_effort_id=None):
-    acts = activity_segment_efforts(activity_segment_effort_id=activity_segment_effort_id)
+def activity_segment_effort(strava_segment_id=None, strava_activity_segment_effort_id=None):
+    acts = activity_segment_efforts(strava_segment_id=strava_segment_id, strava_activity_segment_effort_id=strava_activity_segment_effort_id)
     if len(acts) > 1:
         raise Exception("Expected 0 or 1 result, found {}".format(len(acts)))
 
@@ -213,14 +196,14 @@ def activity_segment_effort(activity_segment_effort_id=None):
 
 
 def add_activity_segment_effort(data):
-    return SQL.insert('activity_segment_efforts', data)
+    return SQL.insert('strava_activity_segment_efforts', data)
 
 
-def update_activity_segment_effort(activity_segment_effort_id=None, data=None):
+def update_activity_segment_effort(strava_activity_segment_effort_id=None, data=None):
     return SQL.update(
-        'activity_segment_efforts',
-        where='activity_segment_effort_id=:activity_segment_efforts',
-        where_data={'activity_segment_effort_id': activity_segment_effort_id},
+        'strava_activity_segment_efforts',
+        where='strava_strava_activity_segment_effort_id=:activity_segment_efforts',
+        where_data={'strava_strava_activity_segment_effort_id': strava_activity_segment_effort_id},
         data=data
     )
 
@@ -228,26 +211,26 @@ def update_activity_segment_effort(activity_segment_effort_id=None, data=None):
 ##############################################################
 # activity_segment_effort_achs
 
-def delete_activity_segment_effort_achs(activity_segment_effort_id=None, segment_effort_id=Nine):
+def delete_activity_segment_effort_achs(strava_activity_segment_effort_id=None, segment_effort_id=None):
     where, bindvars = SQL.auto_where(
-        activity_segment_effort_id=activity_segment_effort_id,
+        strava_activity_segment_effort_id=strava_activity_segment_effort_id,
         segment_effort_id=segment_effort_id,
     )
-    SQL.delete('activity_segment_effort_achs', where, bindvars)
+    SQL.delete('strava_activity_segment_effort_achs', where, bindvars)
 
 
 def add_activity_segment_effort_ach(data):
-    return SQL.insert('activity_segment_effort_achs', data)
+    return SQL.insert('strava_activity_segment_effort_achs', data)
 
 
 ##############################################################
 # activity_streams
 
-def activity_streams(activity_id=None, page=None, limit=None, sort=None):
-    where, bindvars = SQL.auto_where(activity_id=activity_id)
+def activity_streams(strava_activity_id=None, page=None, limit=None, sort=None):
+    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id)
     query = """
-        select * from activity_streams 
-        {where}}
+        select * from strava_activity_streams 
+        {where}
         {sort} {limit}
     """.format(
         where=SQL.where_clause(where),
@@ -257,22 +240,22 @@ def activity_streams(activity_id=None, page=None, limit=None, sort=None):
     return list(SQL.select_foreach(query, bindvars))
 
 
-def delete_activity_streams(activity_id=None):
-    where, bindvars = SQL.auto_where(activity_id=activity_id)
-    SQL.delete('activity_streams', where, bindvars)
+def delete_activity_streams(strava_activity_id=None):
+    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id)
+    SQL.delete('strava_activity_streams', where, bindvars)
 
 
 def add_activity_streams(data):
-    SQL.insert('activity_streams', data)
+    SQL.insert('strava_activity_streams', data)
 
 
 ##############################################################
 # power_curves
 
-def power_curves(activity_id=None, page=None, limit=None, sort=None):
-    where, bindvars = SQL.auto_where(activity_id=activity_id)
+def power_curves(strava_activity_id=None, page=None, limit=None, sort=None):
+    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id)
     query = """
-        select * from power_curves
+        select * from strava_power_curves
         {where} {sort} {limit}
     """.format(
         where=SQL.where_clause(where),
@@ -283,16 +266,16 @@ def power_curves(activity_id=None, page=None, limit=None, sort=None):
 
 
 def add_power_curves(data):
-    return SQL.insert('power_curves', data)
+    return SQL.insert('strava_power_curves', data)
 
 ##############################################################
 # speed_curves
 
 
-def speed_curves(activity_id=None, page=None, limit=None, sort=None):
-    where, bindvars = SQL.auto_where(activity_id=activity_id)
+def speed_curves(strava_activity_id=None, page=None, limit=None, sort=None):
+    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id)
     query = """
-        select * from speed_curves
+        select * from strava_speed_curves
         {where} {sort} {limit}
     """.format(
         where=SQL.where_clause(where),
@@ -302,4 +285,4 @@ def speed_curves(activity_id=None, page=None, limit=None, sort=None):
     return list(SQL.select_foreach(query, bindvars))
 
 def add_speed_curves(data):
-    return SQL.insert('speed_curves', data)
+    return SQL.insert('strava_speed_curves', data)

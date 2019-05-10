@@ -22,10 +22,18 @@ class NoAuthCode(Exception):
 
 
 class StravaError(Exception):
-    pass
+    def __init__(self, message, errors, code):
+        self.message = message
+        self.errors = errors
+        self.code = code
 
+    def __str__(self):
+        return "StravaError(message=%r, errors=%r, code=%r)"
 
 def get_auth_code(user):
+    logger.warning("expires at %r now = %r", user.expires_at, datetime.datetime.utcnow())
+    if user.expires_at <= datetime.datetime.utcnow():
+        user.access_token, user.refresh_token, user.expires_at = refresh_token(user)
     return user.access_token
 
     
@@ -42,7 +50,7 @@ def redirect_token(return_to_url='/'):
         'response_type': 'code',
         'redirect_uri': redirect_uri,
         'state': return_to_url,
-        'scope': 'read_all',
+        'scope': 'read_all,activity:read_all',
     })
 
     return authorize_url
@@ -82,6 +90,7 @@ def refresh_token(user):
     )
 
     data = response.json()
+    logger.warning("refresh token data = %r", data)
     return data['access_token'], data['refresh_token'], data['expires_at']
 
 
@@ -96,16 +105,17 @@ def build_url(pieces):
 def strava_fetch(user, url, **kwargs):
     url_args = ("?" + urllib.parse.urlencode(kwargs)) if len(kwargs) else ''
     full_url = url + url_args
-    logger.info(full_url)
-    response = requests.get(
-        url=full_url,
-        verify=False,
-        headers={'api-key': str(client_id), 'authorization': 'Bearer %s' % get_auth_code(user)}
-    )
+    headers = {'api-key': str(client_id), 'authorization': 'Bearer %s' % get_auth_code(user)}
+    logger.warning("fetch url=%r, headers=%r", full_url, headers)
+    response = requests.get(url=full_url, verify=True, headers=headers)
     ourjson = response.json()
 
     if isinstance(ourjson, dict) and 'errors' in ourjson:
-        raise StravaError(repr([ourjson['message']] + ourjson['errors']))
+        raise StravaError(
+            message=ourjson['message'],
+            errors=ourjson['errors'],
+            code=response.status_code,
+        )
 
     return ourjson
 
@@ -115,7 +125,7 @@ def self(user):
     return strava_fetch(user, url)
 
 
-def activities(user, after=None, before=None, page=None):
+def get_activities(user, after=None, before=None, page=1, per_page=30):
     url = build_url(['athlete', 'activities'])
     kwargs = {}
     if after is not None:
@@ -124,23 +134,39 @@ def activities(user, after=None, before=None, page=None):
         kwargs['before'] = int(before.strftime("%s"))
     if page is not None:
         kwargs['page'] = page
-        kwargs['per_page'] = 200
 
-    return strava_fetch(user, url, **kwargs)
+    kwargs['per_page'] = per_page or 1
+
+    while True:
+        acts = strava_fetch(user, url, **kwargs)
+        if not acts:
+            break
+
+        for a in acts:
+            yield a
+
+        kwargs['page'] += 1
 
 
-def activity(user, activity_id):
+def get_activity(user, activity_id):
     url = build_url(['activities', str(activity_id)])
     return strava_fetch(user, url, include_all_efforts=True)
 
 
-def activity_stream(user, activity_id):
+def get_activity_stream(user, activity_id):
     types = 'time,latlng,distance,altitude,velocity_smooth,heartrate,cadence,watts,temp,moving,grade_smooth'
     url = build_url(['activities', str(activity_id), 'streams', types])
-    return strava_fetch(user, url)
+
+    try:
+        return strava_fetch(user, url)
+    except StravaError as e:
+        if e.code == 404:
+            return []
+
+        raise e
 
 
-def segment_leaderboard(user, segment_id):
+def get_segment_leaderboard(user, segment_id):
     url = build_url(['segments', str(segment_id), 'leaderboard'])
     return strava_fetch(user, url)
 
@@ -151,28 +177,28 @@ def tznow():
     return pytz.utc.localize(datetime.datetime.utcnow())
 
 
+@queries.SQL.is_transaction
 def activities_sync_one(user, activity, full=False, rebuild=False):
     activity_id = activity['id']
-    act = queries.activity(activity_id=activity_id)
+    logger.warning("Syncing activity %r", activity_id)
+    act = queries.activity(strava_activity_id=activity_id)
 
     # If we already have this one, let's not resync
     if act and not rebuild:
         return
 
     if 'segment_efforts' not in activity and full:
-        return activities_sync_one(user, activity(user, activity['id']))
+        return activities_sync_one(user, get_activity(user, activity['id']))
 
-    new = False
+    new = not bool(act)
     if not act:
-        act = {
-            'activity_id': activity_id,
-            'user_id': user.user_id
-        }
-        new = True
+        act = queries.dictobj()
+        act.strava_activity_id = activity_id
+        act.user_id = user.user_id
 
     for key in [
         'external_id', 'upload_id', 'activity_name', 'distance', 'moving_time',
-        'elapsed_time', 'total_elevation_gain', 'elev_high', 'elev_low', 'type', 'timezone',
+        'elapsed_time', 'total_elevation_gain', 'type', 'timezone',
         'achievement_count', 'athlete_count', 'trainer', 'commute', 'manual', 'private', 'embed_token',
         'workout_type', 'gear_id', 'average_speed', 'max_speed', 'average_cadence', 'average_temp', 'average_watts',
         'max_watts', 'weighted_average_watts', 'kilojoules', 'device_watts', 'average_heartrate', 'max_heartrate',
@@ -180,6 +206,8 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
     ]:
         act[key] = activity.get(key)
 
+    act['elevation_high'] = activity.get('elev_high')
+    act['elevation_low'] = activity.get('elev_low')
     act['athlete_id'] = activity['athlete']['id']
 
     act['start_datetime'] = activity['start_date']
@@ -193,37 +221,36 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
     if new:
         queries.add_activity(act)
     else:
-        queries.update_activity(activity_id=activity_id)
+        queries.update_activity(strava_activity_id=activity_id)
 
     if 'segment_efforts' in activity:
         for e in activity.get('segment_efforts', []):
-            effort = activity_segment_effort_sync_one(act, e)
-
-            if new:
-                segment_history_sync_one(user, effort.segment_id, act.athlete_id)
+            activity_segment_effort_sync_one(act, e)
 
     activity_stream_sync(user, act)
 
     return act
 
 
-def activities_sync_many(user):
-    first_date = tznow() - datetime.timedelta(days=14)
+def activities_sync_many(user, days_ago=None):
+    first_date = None
+    if days_ago is not None:
+        first_date = tznow() - datetime.timedelta(days=days_ago)
 
-    for act in activities(user, after=first_date):
+    for act in get_activities(user, after=first_date):
         activities_sync_one(user, act, full=True)
 
 
 def activity_segment_effort_sync_one(activity, segment):
-    id = segment['id']
-    sege = queries.activity_segment_effort(id)
-    new = bool(sege)
+    segment_id = segment['id']
+    sege = queries.activity_segment_effort(strava_segment_id=segment_id)
+    new = not bool(sege)
 
     if not sege:
         sege = queries.dictobj()
-        sege.activity_segment_id = id
+        sege.strava_segment_id = segment_id
 
-    sege.activity = activity
+    sege.strava_activity_id = activity.strava_activity_id
     sege.start_datetime = segment.get('start_date')
     sege.start_datetime_local = segment.get('start_date_local')
 
@@ -234,12 +261,14 @@ def activity_segment_effort_sync_one(activity, segment):
     ]:
         setattr(sege, key, segment.get(key))
 
-    sege.segment = segment_sync_one(segment['segment'])
+    segment_sync_one(segment['segment'])
+    sege.strava_segment_id = segment['segment']['id']
 
     if new:
-        queries.add_activity_segment_effort(sege)
+        i = queries.add_activity_segment_effort(sege)
+        sege.strava_activity_segment_effort_id = i.strava_activity_segment_effort_id
     else:
-        queries.update_activity_segment_effort(id, sege)
+        queries.update_activity_segment_effort(segment_id, sege)
 
     activity_segment_effort_ach_sync(sege, segment['achievements'])
 
@@ -248,11 +277,12 @@ def activity_segment_effort_sync_one(activity, segment):
 
 def segment_sync_one(segment):
     segment_id = segment['id']
-    seg = queries.segment(segment_id=segment_id)
-    new = bool(seg)
+    logger.warning("Syncing segment %r", segment_id)
+    seg = queries.segment(strava_segment_id=segment_id)
+    new = not bool(seg)
     if not seg:
         seg = queries.dictobj()
-        seg.segment_id = segment_id
+        seg.strava_segment_id = segment_id
 
     for key in [
         'resource_state', 'name', 'activity_type', 'distance', 'average_grade', 'maximum_grade', 'elevation_high',
@@ -260,7 +290,6 @@ def segment_sync_one(segment):
         'country', 'private', 'starred', 'created_at', 'updated_at', 'total_elevation_gain', 'effort_count',
         'athlete_count', 'hazardous', 'star_count',
     ]:
-        #logger.warning("key = %r, val = %r", key, segment.get(key))
         setattr(seg, key, segment.get(key))
 
     seg.start_lat = segment['start_latlng'][0] if segment['start_latlng'] else None
@@ -276,49 +305,19 @@ def segment_sync_one(segment):
     return seg
 
 
-def segment_history_sync_one(user, segment_id, athlete_id):
-    try:
-        leaderboard = segment_leaderboard(user, segment_id)
-    except StravaError:
-        logger.warning("Failed to fetch segment leaderboard for segment id %d", segment_id)
-        return
-
-    # get current best and don't write if it's not better?
-
-    logger.info("Syncing %r", segment_id)
-    for el in leaderboard['entries']:
-        if el['athlete_id'] == athlete_id:
-            # is this the same information we already had?
-            existing = queries.segment_history_summaries(segment_id=segment_id)
-            if len(existing) and existing[0].activity.activity_id == el['activity_id']:
-                break
-
-            x = queries.dictobj()
-            x.segment_id = segment_id
-            x.entries = leaderboard['entry_count']
-            x.activity_id = el['activity_id']
-            x.recorded_datetime = tznow()
-            for key in ['rank', 'average_hr', 'average_watts', 'distance', 'elapsed_time', 'moving_time']:
-                setattr(x, key, el[key])
-            queries.add_segment_histories(x)
-
-            y = queries.dictobj()
-            y.segment_id = segment_id
-            y.activity_id = el['activity_id']
-            queries.add_segment_history_summaries(y)
-
-            break
-
-
 # Note, this actually downloads the data too, via the API
 def activity_stream_sync(user, activity, force=False):
-    current = queries.activity_streams(activity_id=activity.activity_id)
+    logger.warning("Syncing activity stream id=%r", activity.strava_activity_id)
+    current = queries.activity_streams(strava_activity_id=activity.strava_activity_id)
     if len(current) and not force:
         return
 
-    queries.delete_activity_streams(activity_id=activity.activity_id)
+    queries.delete_activity_streams(strava_activity_id=activity.strava_activity_id)
 
-    stream_data = activity_stream(user, activity.activity_id)
+    stream_data = get_activity_stream(user, activity.strava_activity_id)
+    if not stream_data:
+        return
+
     types = []
     datas = []
     for stream in stream_data:
@@ -326,9 +325,8 @@ def activity_stream_sync(user, activity, force=False):
         datas.append(stream['data'])
 
     for datum in zip(*datas):
-        #logger.warning("%r", zip(types, datum))
         s = queries.dictobj()
-        s.activity = activity
+        s.strava_activity_id = activity.strava_activity_id
         for t, d in zip(types, datum):
             if t == 'latlng':
                 s.lat = d[0]
@@ -338,19 +336,20 @@ def activity_stream_sync(user, activity, force=False):
 
         queries.add_activity_streams(s)
 
-    power_curve_process(activity.activity_id)
-    speed_curve_process(activity.activity_id)
+    power_curve_process(activity.strava_activity_id)
+    speed_curve_process(activity.strava_activity_id)
 
 
 def activity_segment_effort_ach_sync(segment_effort, achievements):
-    #logger.warning("ach = %r", achievements)
     if not len(achievements):
         return
 
-    queries.delete_activity_segment_effort_achs(segment_effort_id=segment_effort.segment_effort_id)
+    queries.delete_activity_segment_effort_achs(
+        strava_activity_segment_effort_id=segment_effort.strava_activity_segment_effort_id
+    )
     for ach in achievements:
         a = queries.dictobj()
-        a.segment_effort = segment_effort
+        a.strava_activity_segment_effort_id = segment_effort.strava_activity_segment_effort_id
         a.type_id = ach['type_id']
         a.type = ach['type']
         a.rank = ach['rank']
@@ -358,7 +357,7 @@ def activity_segment_effort_ach_sync(segment_effort, achievements):
         queries.add_activity_segment_effort_ach(a)
 
 
-def power_curve_window( data, length):
+def power_curve_window(data, length):
     w = numpy.ones(length, 'd')
     x = numpy.array([a[1] for a in data])
 
@@ -371,7 +370,7 @@ def power_curve_window( data, length):
 
 
 def power_curve_process(activity_id, delete=False):
-    existing = queries.power_curves(activity_id=activity_id)
+    existing = queries.power_curves(strava_activity_id=activity_id)
     if len(existing):
         if delete:
             existing.delete()
@@ -383,13 +382,14 @@ def power_curve_process(activity_id, delete=False):
 
     last = None
     first = None
-    stream_data = queries.activity_streams(activity_id=activity_id, sort='time')
+    stream_data = queries.activity_streams(strava_activity_id=activity_id, sort='time')
     if not len(stream_data):
         logger.warning("No stream data for %d", activity_id)
         return
 
-    logger.warning("Processing power curve for %d\n", activity_id)
+    logger.warning("Processing power curve for %d", activity_id)
 
+    row = None
     for dat in stream_data:
         row = (dat.time, dat.watts if dat.watts else 0)
 
@@ -425,9 +425,9 @@ def power_curve_process(activity_id, delete=False):
         p = queries.dictobj()
         p.interval_length = win
         p.watts = val
-        p.activity_id = activity_id
-        p.start_index = 0
-        p.end_index = 0
+        p.strava_activity_id = activity_id
+        # p.start_index = 0
+        # p.end_index = 0
         queries.add_power_curves(p)
 
 
@@ -444,7 +444,7 @@ def speed_curve_window(data, length):
 
 
 def speed_curve_process(activity_id, delete=False):
-    existing = queries.speed_curves(activity_id=activity_id)
+    existing = queries.speed_curves(strava_activity_id=activity_id)
     if len(existing):
         if delete:
             existing.delete()
@@ -454,15 +454,16 @@ def speed_curve_process(activity_id, delete=False):
     segments = []
     this_segment = []
 
-    stream_data = queries.activity_streams(activity_id=activity_id, sort='time')
+    stream_data = queries.activity_streams(strava_activity_id=activity_id, sort='time')
     if not len(stream_data):
         logger.warning("No stream data for %d", activity_id)
         return
 
-    logger.warning("Processing speed curve for %d\n", activity_id)
+    logger.warning("Processing speed curve for %d", activity_id)
 
     last = None
     first = None
+    row = None
     for dat in stream_data:
         row = dat.time, dat.velocity_smooth if dat.velocity_smooth else 0, dat.distance if dat.distance else 0
 
@@ -500,7 +501,7 @@ def speed_curve_process(activity_id, delete=False):
         s = queries.dictobj()
         s.interval_length = win
         s.speed = val
-        s.activity_id = activity_id
-        s.start_index = 0
-        s.end_index = 0
+        s.strava_activity_id = activity_id
+        # s.start_index = 0
+        # s.end_index = 0
         queries.add_speed_curves(s)

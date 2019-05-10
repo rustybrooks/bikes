@@ -422,6 +422,9 @@ class SQLConn(object):
             return dictobj(result.items()) if result is not None else None
 
     def insert(self, table_name, data, ignore_duplicates=False, batch_size=200, returning=True):
+        # if isinstance(data, dictobj):
+        #     data = data.asdict()
+
         def _ignore_pre():
             if self.sql.mysql:
                 return ' ignore'
@@ -439,7 +442,7 @@ class SQLConn(object):
         if not data:
             return 0
 
-        sample = data if isinstance(data, dict) else data[0]
+        sample = data if isinstance(data, (dict, dictobj)) else data[0]
         columns = sorted(sample.keys())
         if self.sql.mysql:
             values = [u'%({})s'.format(c) for c in columns]
@@ -456,7 +459,7 @@ class SQLConn(object):
         )
 
         with self.cursor() as c:
-            if isinstance(data, dict):
+            if isinstance(data, (dict, dictobj)):
                 rs = c.execute(text(query), data)
                 if self.sql.postgres:
                     return dictobj(rs.fetchone().items())
@@ -492,7 +495,7 @@ class SQLConn(object):
             return rs.rowcount
 
     def update_multiple(self, table_name, where, data=None, where_columns=None, batch_size=200):
-        sample = data if isinstance(data, dict) else data[0]
+        sample = data if isinstance(data, (dict, dictobj)) else data[0]
         columns = sorted([k for k in sample.keys() if k not in (where_columns or [])])
 
         query = u'update {table} set {sets} {where}'.format(
