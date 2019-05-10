@@ -35,10 +35,11 @@ def get_auth_code(user):
 
     
 def redirect_token(return_to_url):
-    if os.getenv('WEB_LOCAL', "0") == "1":
-        redirect_uri = 'http://localhost:8000/stravacallback'
+    if os.getenv('ENVIRONMENT', "dev") == "dev":
+        redirect_uri = 'http://localhost:5000/stravacallback'
     else:
         redirect_uri = "http://bike.rustybrooks.com/stravacallback"
+
     authorize_url = 'https://www.strava.com/oauth/authorize'
     authorize_url += "?"
     authorize_url += urllib.urlencode({
@@ -46,7 +47,7 @@ def redirect_token(return_to_url):
         'response_type': 'code',
         'redirect_uri': redirect_uri,
         'state': return_to_url,
-        'scope': 'view_private',
+        'scope': 'read_all',
     })
 
     return authorize_url
@@ -58,6 +59,36 @@ def get_token(code, user):
         'client_id': client_id,
         'client_secret': client_secret,
         'code': code,
+    }
+
+    response = requests.post(
+        url=access_token_url,
+        data=access_token_data,
+        headers={'Api-Key': client_id}
+    )
+
+    token = response.json()['access_token']
+
+    token_obj = models.StravaTokens.objects.filter(user=user).first()
+    if token_obj:
+        token_obj.auth_key = token
+    else:
+        token_obj = models.StravaTokens()
+        token_obj.user = user
+        token_obj.auth_key = token
+
+    token_obj.save()
+
+    return token
+
+
+def refresh_token(user):
+    access_token_url = 'https://www.strava.com/oauth/token'
+    access_token_data = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'grant_type': 'refresh_token',
+        'refresh_token': user.refresh_token
     }
 
     response = requests.post(

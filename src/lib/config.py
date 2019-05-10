@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_config():
-    config_file = os.path.join('/srv/data/flannelcat.cfg')
+    config_file = os.path.join('/srv/data/bikes.cfg')
     # logger.warn("config file = %r", config_file)
     if os.path.exists(config_file):
         return json.load(open(config_file))
