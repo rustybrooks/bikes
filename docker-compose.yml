@@ -39,6 +39,9 @@ services:
       - ENVIRONMENT=dev
       - DATA_ROOT=/srv/data
       - FLASK_STORAGE=0
+      - CLIENT_ID = 9981
+      - CLIENT_SECRET = "95fffa4745f641a3eeae5d073ad870ce4680e37e"
+
     ports:
         - 3306:3306
 

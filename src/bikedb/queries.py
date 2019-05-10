@@ -133,3 +133,173 @@ def activity(activity_id=None):
         raise Exception("Expected 0 or 1 result, found {}".format(len(acts)))
 
     return acts[0] if acts else None
+
+
+def add_activity(data):
+    return SQL.insert('activities', data)
+
+
+def update_activity(activity_id=None, data=None):
+    return SQL.update(
+        'activities',
+        where='activity_id=:activity_id',
+        where_data={'activity_id': activity_id},
+        data=data
+    )
+
+
+##############################################################
+# segments
+
+def segments(segment_id=None):
+    where, bindvars = SQL.auto_where(segment_id=segment_id)
+    query = "select * from segments {}".format(SQL.where_clause(where))
+    return list(SQL.select_foreach(query, bindvars))
+
+def segment(segment_id=None):
+    s = segments(segment_id=segment_id)
+    if len(s) > 1:
+        raise Exception("Expected 0 or 1 result, found {}".format(len(s)))
+
+    return s[0] if s else None
+
+def add_segment(data):
+    SQL.insert('segments', data)
+
+
+def update_segment(segment_id=None, data=None):
+    SQL.update(
+        'segments',
+        where="segment_id=:segment_id",
+        where_data={'segment_id': segment_id},
+        data=data,
+    )
+
+
+##############################################################
+# segment_histories
+
+def add_segment_histories(data):
+    return SQL.insert('segment_history', data)
+
+##############################################################
+# segment_history_summaries
+
+def segment_history_summaries(segment_id=None):
+    where, bindvars = SQL.auto_where(segment_id=segment_id)
+    query = "select * from segment_history_summaries {}".format(SQL.where_clause(where))
+    return list(SQL.select_foreach(query, bindvars))
+
+def add_segment_history_summaries(data):
+    return SQL.insert('segment_history_summaries', data)
+
+
+
+##############################################################
+# activity_segment_efforts
+
+def activity_segment_efforts(activity_segment_effort_id=None):
+    where, bindvars = SQL.auto_where(activity_segment_effort_id=activity_segment_effort_id)
+    query = "select * from activity_segment_efforts {}".format(SQL.where_clause(where))
+    return list(SQL.select_foreach(query, bindvars))
+
+
+def activity_segment_effort(activity_segment_effort_id=None):
+    acts = activity_segment_efforts(activity_segment_effort_id=activity_segment_effort_id)
+    if len(acts) > 1:
+        raise Exception("Expected 0 or 1 result, found {}".format(len(acts)))
+
+    return acts[0] if acts else None
+
+
+def add_activity_segment_effort(data):
+    return SQL.insert('activity_segment_efforts', data)
+
+
+def update_activity_segment_effort(activity_segment_effort_id=None, data=None):
+    return SQL.update(
+        'activity_segment_efforts',
+        where='activity_segment_effort_id=:activity_segment_efforts',
+        where_data={'activity_segment_effort_id': activity_segment_effort_id},
+        data=data
+    )
+
+
+##############################################################
+# activity_segment_effort_achs
+
+def delete_activity_segment_effort_achs(activity_segment_effort_id=None, segment_effort_id=Nine):
+    where, bindvars = SQL.auto_where(
+        activity_segment_effort_id=activity_segment_effort_id,
+        segment_effort_id=segment_effort_id,
+    )
+    SQL.delete('activity_segment_effort_achs', where, bindvars)
+
+
+def add_activity_segment_effort_ach(data):
+    return SQL.insert('activity_segment_effort_achs', data)
+
+
+##############################################################
+# activity_streams
+
+def activity_streams(activity_id=None, page=None, limit=None, sort=None):
+    where, bindvars = SQL.auto_where(activity_id=activity_id)
+    query = """
+        select * from activity_streams 
+        {where}}
+        {sort} {limit}
+    """.format(
+        where=SQL.where_clause(where),
+        sort=SQL.orderby(sort),
+        limit=SQL.limit(page=page, limit=limit)
+    )
+    return list(SQL.select_foreach(query, bindvars))
+
+
+def delete_activity_streams(activity_id=None):
+    where, bindvars = SQL.auto_where(activity_id=activity_id)
+    SQL.delete('activity_streams', where, bindvars)
+
+
+def add_activity_streams(data):
+    SQL.insert('activity_streams', data)
+
+
+##############################################################
+# power_curves
+
+def power_curves(activity_id=None, page=None, limit=None, sort=None):
+    where, bindvars = SQL.auto_where(activity_id=activity_id)
+    query = """
+        select * from power_curves
+        {where} {sort} {limit}
+    """.format(
+        where=SQL.where_clause(where),
+        sort=SQL.orderby(sort),
+        limit=SQL.limit(page=page, limit=limit)
+    )
+    return list(SQL.select_foreach(query, bindvars))
+
+
+def add_power_curves(data):
+    return SQL.insert('power_curves', data)
+
+##############################################################
+# speed_curves
+
+
+def speed_curves(activity_id=None, page=None, limit=None, sort=None):
+    where, bindvars = SQL.auto_where(activity_id=activity_id)
+    query = """
+        select * from speed_curves
+        {where} {sort} {limit}
+    """.format(
+        where=SQL.where_clause(where),
+        sort=SQL.orderby(sort),
+        limit=SQL.limit(page=page, limit=limit)
+    )
+    return list(SQL.select_foreach(query, bindvars))
+
+def add_speed_curves(data):
+    return SQL.insert('speed_curves', data)
