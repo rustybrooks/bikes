@@ -75,29 +75,161 @@ class Interface(Api):
 
     @classmethod
     def strava_update(cls, _user=None):
-        stravaapi.activities_sync_many(_user)
+        stravaapi.activities_sync_many(_user, days_ago=60)
         return "done"
+
+    @classmethod
+    def _dist_pt_to_seg(cls, p, seg):
+        import math
+
+        def dis(latA, lonA, latB, lonB):
+            R = 6371000
+            return math.acos(math.sin(latA) * math.sin(latB) + math.cos(latA) * math.cos(latB) * math.cos(lonB - lonA)) * R
+
+        def bear(latA, lonA, latB, lonB):
+            return math.atan2(math.sin(lonB - lonA) * math.cos(latB), math.cos(latA) * math.sin(latB) - math.sin(latA) * math.cos(latB) * math.cos(lonB - lonA) )
+
+        lat1, lon1 = seg[0]
+        lat2, lon2 = seg[1]
+        lat3, lon3 = p
+
+        lat1 = math.radians(lat1)
+        lat2 = math.radians(lat2)
+        lat3 = math.radians(lat3)
+        lon1 = math.radians(lon1)
+        lon2 = math.radians(lon2)
+        lon3 = math.radians(lon3)
+
+        R = 6371000.  # Earth's radius in meters
+
+        bear12 = bear(lat1, lon1, lat2, lon2)
+        bear13 = bear(lat1, lon1, lat3, lon3)
+        dis13 = dis(lat1, lon1, lat3, lon3)
+
+        if abs(bear13 - bear12) > (math.pi / 2.):
+            dxa = dis13
+        else:
+            dxt = math.asin(math.sin(dis13 / R) * math.sin(bear13 - bear12)) * R
+
+            dis12 = dis(lat1, lon1, lat2, lon2)
+            dis14 = math.acos(math.cos(dis13 / R) / math.cos(dxt / R)) * R
+            if dis14 > dis12:
+                dxa = dis(lat2, lon2, lat3, lon3)
+            else:
+                dxa = abs(dxt)
+
+        return dxa
+
+    @classmethod
+    def _dist(cls, origin, destination):
+        import math
+
+        lat1, lon1 = origin
+        lat2, lon2 = destination
+        radius = 6371  # km
+
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = (math.sin(dlat / 2) * math.sin(dlat / 2) +
+             math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
+             math.sin(dlon / 2) * math.sin(dlon / 2))
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        d = radius * c
+        return d
+
+#    @classmethod
+#    def delete_all(cls):
+#        for table in [
+#            'speed_curves', 'power_curves', 'strava_activity_streams',
+#            'strava_activity_segment_effort_achs', 'strava_activity_segment_effort',
+#            'strava_segments', 'strava_activities'
+#
+#        ]
+#            queries.SQL.delete(table)
 
     @classmethod
     @Api.config(require_login=is_logged_in)
     def test(cls):
         import matplotlib
         matplotlib.use('Agg')
-
         import osmnx as ox
+        import matplotlib.pyplot as plt
 
-        G = ox.graph_from_point((37.79, -122.41), distance=750, network_type='all')
+        data = queries.activity_streams(strava_activity_id=2347770699, sort='time')
+        G = ox.graph_from_bbox(
+            max([x.lat for x in data]),
+            min([x.lat for x in data]),
+            max([x.long for x in data]),
+            min([x.long for x in data]),
+            truncate_by_edge=True, simplify=False, clean_periphery=False, network_type='all'
+        )
+        nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
+        # logger.warn("%r - %r", len(nodes), len(edges))
+
+        trunc_data = data
+        e = ox.get_nearest_edges(G, X=[x.long for x in trunc_data], Y=[x.lat for x in trunc_data], method='balltree')
+        pts = []
+        for x, d in zip(e, trunc_data):
+            # e = edges.loc[x]
+#            logger.warn("e = %r %r", e, dir(e))
+#            logger.warn("x = %r", x.__class__)
+            n1 = nodes.loc[x[0]]
+            n2 = nodes.loc[x[1]]
+#            logger.warn("%r %r", n1.x, n1.y)
+#            logger.warn("%r", cls._dist((n1.x, n1.y), (n2.x, n2.y)))
+            p = (d.long, d.lat)
+            seg = (
+                (n1.x, n1.y),
+                (n2.x, n2.y)
+            )
+            dist = cls._dist_pt_to_seg(p, seg)
+            # logger.warn("%r", dist)
+            if (dist > 20):
+                pts.append(p)
 
         with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png') as tf:
-            ox.plot_graph(G, save=True, show=False, filename=tf.name)
-            tf.seek(0)
+            fig, ax = ox.plot_graph(
+                G, save=False, show=False, close=False,
+                margin=0., use_geom=True, node_size=2, edge_linewidth=1, axis_off=True,
+                edge_alpha=0.75, node_alpha=1, node_color='purple',
+                fig_width=12, fig_height=12
+            )
+            ax.plot([x.long for x in data], [x.lat for x in data], c='red', linewidth=1, alpha=0.25)
+            # ax.scatter([x.long for x in data], [x.lat for x in data], c='red', s=1, alpha=0.25)
+            ax.scatter([x[0] for x in pts], [x[1] for x in pts], c='green', s=1.5, alpha=.25)
+            plt.tight_layout()
+            plt.savefig(tf.name, dpi=600)
+
             return HttpResponse(
-                content=tf.read(),
+                content=open(tf.name, 'rb').read(),
                 content_type='image/png',
             )
 
 
+@api_register(None, require_login=is_logged_in)
+class CalendarApi(Api):
+    @classmethod
+    def index(self):
+        # cal = models.Calendar(user=request.user, all=request.REQUEST.get('all', False))
+        #
+        # script = bokeh.embed.autoload_server(
+        #     model=None,
+        #     app_path="/graphs/bike_weekly_summary",
+        #     url="http://graphs-home.rustybrooks.com:5000/"
+        # )
+
+        context = {
+            # 'calendar': cal,
+            # 'reverse': reverse,
+            # 'urllib': urllib,
+            # 'datetime': datetime,
+            # 'graph_script': script,
+        }
+        return HttpResponse(render_template('calendar/index.html'))
+
+
 api_framework.app_class_proxy(app, '', '/', Interface())
+api_framework.app_class_proxy(app, '', '/calendar', CalendarApi())
 
 
 codes = [400, 406, 404]

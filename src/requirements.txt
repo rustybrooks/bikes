@@ -2,3 +2,6 @@ geopandas
 rtree
 osmnx
 matplotlib
+pillow
+geopy
+scikit-learn

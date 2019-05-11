@@ -216,7 +216,7 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
         act.user_id = user.user_id
 
     for key in [
-        'external_id', 'upload_id', 'activity_name', 'distance', 'moving_time',
+        'external_id', 'upload_id', 'distance', 'moving_time',
         'elapsed_time', 'total_elevation_gain', 'type', 'timezone',
         'achievement_count', 'athlete_count', 'trainer', 'commute', 'manual', 'private', 'embed_token',
         'workout_type', 'gear_id', 'average_speed', 'max_speed', 'average_cadence', 'average_temp', 'average_watts',
@@ -224,6 +224,8 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
         'suffer_score', 'flagged'
     ]:
         act[key] = activity.get(key)
+
+    act.activity_name = activity.get('name')
 
     act['elevation_high'] = activity.get('elev_high')
     act['elevation_low'] = activity.get('elev_low')

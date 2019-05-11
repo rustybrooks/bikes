@@ -34,7 +34,17 @@ initial.add_statement("""
 """)
 initial.add_statement("create index users_user_id on users(user_id)")
 
-initial.add_statement("""
+new = Migration(2, "strava stuff")
+for table in [
+    'strava_power_curves', 'strava_speed_curves',
+    'strava_segment_histories', 'strava_segment_history_summaries',
+    'strava_activity_segment_effort_achs', 'strava_activity_segment_efforts', 'strava_segments',
+    'strava_activity_streams', 'strava_activities',
+]:
+    new.add_statement("drop table if exists {}".format(table))
+
+
+new.add_statement("""
     create table strava_activities(
         strava_activity_id bigint primary key,
         user_id bigint not null references users(user_id),
@@ -50,12 +60,12 @@ initial.add_statement("""
         type varchar(100) not null,
         elapsed_time int not null,
         start_datetime timestamp,
-        start_datetime_local timestamp with time zone not null,
+        start_datetime_local timestamp not null,
         timezone varchar(100) not null,
-        start_lat real,
-        start_long real,
-        end_lat real,
-        end_long real,
+        start_lat double precision,
+        start_long double precision,
+        end_lat double precision,
+        end_long double precision,
         achievement_count int not null,
         athlete_count int not null,
         -- map dunno,
@@ -81,10 +91,10 @@ initial.add_statement("""
         suffer_score integer
     )
 """)
-initial.add_statement("create index strava_activities_id on strava_activities(strava_activity_id)")
-initial.add_statement("create index strava_activities_user_id on strava_activities(user_id, strava_activity_id)")
+new.add_statement("create index strava_activities_id on strava_activities(strava_activity_id)")
+new.add_statement("create index strava_activities_user_id on strava_activities(user_id, strava_activity_id)")
 
-initial.add_statement("""
+new.add_statement("""
     create table strava_segments(
         strava_segment_id bigint primary key,
         resource_state int not null,
@@ -93,12 +103,12 @@ initial.add_statement("""
         distance real not null,
         average_grade real not null,
         maximum_grade real not null,
-        elevation_high real not null,
-        elevation_low real not null,
-        start_lat real,
-        start_long real,
-        end_lat real,
-        end_long real,
+        elevation_high double precision,
+        elevation_low double precision,
+        start_lat double precision,
+        start_long double precision,
+        end_lat double precision,
+        end_long double precision,
         climb_category int,
         city varchar(200),
         state varchar(100),
@@ -114,10 +124,10 @@ initial.add_statement("""
         star_count int
     )
 """)
-initial.add_statement("create index strava_segments_id on strava_segments(strava_segment_id)")
+new.add_statement("create index strava_segments_id on strava_segments(strava_segment_id)")
 
 
-initial.add_statement("""
+new.add_statement("""
     create table strava_activity_segment_efforts(
         strava_activity_segment_effort_id serial primary key,
         strava_activity_id bigint not null references strava_activities(strava_activity_id),
@@ -142,9 +152,9 @@ initial.add_statement("""
         hidden bool not null default false
     )
 """)
-initial.add_statement("create index strava_activity_segment_efforts_id on strava_activity_segment_efforts(strava_activity_segment_effort_id)")
+new.add_statement("create index strava_activity_segment_efforts_id on strava_activity_segment_efforts(strava_activity_segment_effort_id)")
 
-initial.add_statement("""
+new.add_statement("""
     create table strava_activity_segment_effort_achs(
         strava_activity_segment_effort_ach_id bigserial primary key,
         strava_activity_segment_effort_id integer not null references strava_activity_segment_efforts(strava_activity_segment_effort_id),
@@ -153,18 +163,18 @@ initial.add_statement("""
         rank integer not null
     )
 """)
-initial.add_statement("create index strava_activity_segment_effort_achs_id on strava_activity_segment_effort_achs(strava_activity_segment_effort_ach_id)")
+new.add_statement("create index strava_activity_segment_effort_achs_id on strava_activity_segment_effort_achs(strava_activity_segment_effort_ach_id)")
 
 
-initial.add_statement("""
+new.add_statement("""
     create table strava_activity_streams(
         strava_activity_stream_id bigserial primary key,
         strava_activity_id bigint not null references strava_activities(strava_activity_id),
         time int not null,
-        lat real,
-        long real,
+        lat double precision,
+        long double precision,
         distance real,
-        altitude real,
+        altitude double precision,
         velocity_smooth real,
         heartrate real,
         cadence real,
@@ -174,11 +184,11 @@ initial.add_statement("""
         grade_smooth real
     )
 """)
-initial.add_statement("create index strava_activity_streams_id on strava_activity_streams(strava_activity_stream_id)")
-initial.add_statement("create index strava_activity_streams_activity_id on strava_activity_streams(strava_activity_id)")
+new.add_statement("create index strava_activity_streams_id on strava_activity_streams(strava_activity_stream_id)")
+new.add_statement("create index strava_activity_streams_activity_id on strava_activity_streams(strava_activity_id)")
 
 
-initial.add_statement("""
+new.add_statement("""
     create table strava_power_curves(
         strava_power_curve_id bigserial primary key,
         interval_length int not null,
@@ -186,10 +196,10 @@ initial.add_statement("""
         strava_activity_id bigint not null references strava_activities(strava_activity_id)
     )
 """)
-initial.add_statement("create index strava_power_curves_id on strava_power_curves(strava_power_curve_id)")
-initial.add_statement("create index strava_power_curves_activity_id on strava_power_curves(strava_activity_id)")
+new.add_statement("create index strava_power_curves_id on strava_power_curves(strava_power_curve_id)")
+new.add_statement("create index strava_power_curves_activity_id on strava_power_curves(strava_activity_id)")
 
-initial.add_statement("""
+new.add_statement("""
     create table strava_speed_curves(
         strava_power_curve_id bigserial primary key,
         interval_length int not null,
@@ -197,7 +207,7 @@ initial.add_statement("""
         strava_activity_id bigint not null references strava_activities(strava_activity_id)
     )
 """)
-initial.add_statement("create index strava_speed_curves_id on strava_speed_curves(strava_power_curve_id)")
-initial.add_statement("create index strava_speed_curves_activity_id on strava_speed_curves(strava_activity_id)")
+new.add_statement("create index strava_speed_curves_id on strava_speed_curves(strava_power_curve_id)")
+new.add_statement("create index strava_speed_curves_activity_id on strava_speed_curves(strava_activity_id)")
 
 

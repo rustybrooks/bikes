@@ -117,12 +117,23 @@ def delete_user(username=None, email=None):
     SQL.delete('users', where, bindvars)
 
 
-
 ##############################################################
 # activities
 
-def activities(strava_activity_id=None):
-    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id)
+def activities(strava_activity_id=None, type=None, type_in=None):
+    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id, type=type)
+
+    if type_in:
+        n = 0
+        tv = []
+        for el in type_in:
+            v = 'type_{}'.format(n)
+            bindvars[v] = el
+            tv.append(':{}'.format(v))
+            n += 1
+
+        where += 'type in ({})'.format(','.join([x for x in tv]))
+
     query = "select * from strava_activities {}".format(SQL.where_clause(where))
     return list(SQL.select_foreach(query, bindvars))
 
