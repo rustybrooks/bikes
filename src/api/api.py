@@ -1,3 +1,10 @@
+import matplotlib
+
+matplotlib.use('Agg')
+import osmnx as ox
+import matplotlib.pyplot as plt
+
+
 import datetime
 from flask import Flask, request, render_template, session, redirect, url_for, escape
 import logging
@@ -9,6 +16,35 @@ from lib import api_framework, config
 from lib.api_framework import api_register, Api, HttpResponse, api_bool
 from flask_cors import CORS
 import flask_login
+
+osmnx_cache_dir = '/srv/data/osmnx_cache'
+if not os.path.exists(osmnx_cache_dir):
+    os.makedirs(osmnx_cache_dir)
+
+ox.utils.config(
+    # data_folder='data',
+    # logs_folder='logs',
+    # imgs_folder='images',
+    cache_folder=osmnx_cache_dir,
+    use_cache=True,
+    # log_file=False,
+    # log_console=False,
+    # log_level=20,
+    # log_name='osmnx',
+    # log_filename='osmnx',
+    # useful_tags_node=['ref', 'highway'],
+    # useful_tags_path=['bridge', 'tunnel', 'oneway', 'lanes', 'ref', 'name', 'highway', 'maxspeed', 'service', 'access', 'area', 'landuse', 'width', 'est_width', 'junction'],
+    # osm_xml_node_attrs=['id', 'timestamp', 'uid', 'user', 'version', 'changeset', 'lat', 'lon'],
+    # osm_xml_node_tags=['highway'],
+    # osm_xml_way_attrs=['id', 'timestamp', 'uid', 'user', 'version', 'changeset'],
+    # osm_xml_way_tags=['highway', 'lanes', 'maxspeed', 'name', 'oneway'],
+    # default_access='["access"!~"private"]',
+    # default_crs='+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs',
+    # default_user_agent='Python OSMnx package (https://github.com/gboeing/osmnx)',
+    # default_referer='Python OSMnx package (https://github.com/gboeing/osmnx)',
+    # default_accept_language='en'
+)
+
 
 from bikedb import queries, stravaapi
 
@@ -150,21 +186,38 @@ class Interface(Api):
     @classmethod
     @Api.config(require_login=is_logged_in)
     def test(cls):
-        import matplotlib
-        matplotlib.use('Agg')
-        import osmnx as ox
-        import matplotlib.pyplot as plt
+        # importing libraries
+        import pandas as pd  # Reading csv file
+        from shapely.geometry import Point, LineString  # Shapely for converting latitude/longtitude to geometry
+        import geopandas as gpd  # To create GeodataFrame
 
+        t1 = time.time()
         data = queries.activity_streams(strava_activity_id=2347770699, sort='time')
+
+        route = gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
+            LineString([(a.long, a.lat), (b.long, b.lat)]) for a, b in zip(data[:-1], data[1:])
+        ])
+        # gdf_projected = gdf.to_crs('utm')
+
+        north = max([x.lat for x in data])
+        south = min([x.lat for x in data])
+        east = max([x.long for x in data])
+        west = min([x.long for x in data])
+
+        t2 = time.time()
         G = ox.graph_from_bbox(
-            max([x.lat for x in data]),
-            min([x.lat for x in data]),
-            max([x.long for x in data]),
-            min([x.long for x in data]),
+            north, south, east, west,
             truncate_by_edge=True, simplify=False, clean_periphery=False, network_type='all'
         )
+        t3 = time.time()
+        # G_projected = ox.project_graph(G)
+        t4 = time.time()
+
+        buildings = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building')
+
         nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
-        # logger.warn("%r - %r", len(nodes), len(edges))
+        t5 = time.time()
+        logger.warn("%r - %r", len(nodes), len(edges))
 
         trunc_data = data
         e = ox.get_nearest_edges(G, X=[x.long for x in trunc_data], Y=[x.lat for x in trunc_data], method='balltree')
@@ -188,22 +241,26 @@ class Interface(Api):
                 pts.append(p)
 
         with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png') as tf:
-            fig, ax = ox.plot_graph(
-                G, save=False, show=False, close=False,
-                margin=0., use_geom=True, node_size=2, edge_linewidth=1, axis_off=True,
-                edge_alpha=0.75, node_alpha=1, node_color='purple',
-                fig_width=12, fig_height=12
-            )
-            ax.plot([x.long for x in data], [x.lat for x in data], c='red', linewidth=1, alpha=0.25)
-            # ax.scatter([x.long for x in data], [x.lat for x in data], c='red', s=1, alpha=0.25)
-            ax.scatter([x[0] for x in pts], [x[1] for x in pts], c='green', s=1.5, alpha=.25)
+            fig, ax = plt.subplots(figsize=(12,12))
+            ax.set_aspect('equal')
+
+            # area.plot(ax=ax, facecolor='black')
+            edges.plot(ax=ax, linewidth=1, edgecolor='#BC8F8F')
+            buildings.plot(ax=ax, facecolor='#eeeeee', alpha=1)
+            route.plot(ax=ax, alpha=0.5, markersize=1, color='red')
             plt.tight_layout()
-            plt.savefig(tf.name, dpi=600)
+            plt.axis('off')
+
+            plt.savefig(tf.name, dpi=200)
+
+            te = time.time()
+            logger.warn("%0.3f %0.3f %0.3f %0.3f %0.3f", t2-t1, t3-t2, t4-t3, t5-t4, te-t5)
 
             return HttpResponse(
                 content=open(tf.name, 'rb').read(),
                 content_type='image/png',
             )
+
 
 
 @api_register(None, require_login=is_logged_in)
