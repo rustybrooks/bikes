@@ -143,7 +143,7 @@ initial.add_statement("""
         hidden bool not null default false
     )
 """)
-initial.add_statement("create index strava_activity_segment_efforts_id on strava_activity_segment_efforts(strava_activity_segment_effort_id)")"
+initial.add_statement("create index strava_activity_segment_efforts_id on strava_activity_segment_efforts(strava_activity_segment_effort_id)")
 
 initial.add_statement("""
     create table strava_activity_segment_effort_achs(
@@ -154,8 +154,7 @@ initial.add_statement("""
         rank integer not null
     )
 """)
-initial.add_statement("create index strava_activity_segment_effort_achs_id on strava_activity_segment_effort_achs(strava_activity_segment_effort_ach_id)")"
-
+initial.add_statement("create index strava_activity_segment_effort_achs_id on strava_activity_segment_effort_achs(strava_activity_segment_effort_ach_id)")
 
 
 initial.add_statement("""
