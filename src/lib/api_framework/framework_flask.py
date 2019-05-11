@@ -20,11 +20,12 @@ def build_absolute_url(path, params):
 
 # for compatibility with Django
 class HttpResponse(Response):
-    def __init__(self, content, status=200, content_type='text/html'):
+    def __init__(self, content, status=200, content_type='text/html', headers=None):
         super(HttpResponse, self).__init__(
             response=content,
             content_type=content_type,
-            status=status
+            status=status,
+            headers=headers or {},
         )
 
 

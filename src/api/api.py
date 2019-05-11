@@ -59,7 +59,7 @@ class Interface(Api):
     def strava_connect(cls):
         authorize_url = stravaapi.redirect_token()
         r = redirect(authorize_url)
-        return HttpResponse(content=r.response, status=r.status, content_type=r.content_type)
+        return HttpResponse(content=r.response, status=r.status, content_type=r.content_type, headers=r.headers)
 
     @classmethod
     def strava_callback(cls, code=None, state=None, _user=None):
@@ -72,7 +72,7 @@ class Interface(Api):
             expires_at=datetime.datetime.utcfromtimestamp(expires_at),
         )
         r = redirect(state)
-        return HttpResponse(content=r.response, status=r.status, content_type=r.content_type)
+        return HttpResponse(content=r.response, status=r.status, content_type=r.content_type, headers=r.headers)
 
     @classmethod
     def strava_refresh(cls, _user=None):
