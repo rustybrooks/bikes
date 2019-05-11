@@ -272,7 +272,7 @@ class Interface(Api):
         G_p = ox.project_graph(G)
         t4 = time.time()
 
-#        buildings = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building')
+        buildings = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building')
 #         areas = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='place')
         nodes_p, edges_p = ox.graph_to_gdfs(G_p, nodes=True, edges=True)
 
