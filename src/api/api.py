@@ -63,29 +63,14 @@ class Interface(Api):
 
     @classmethod
     def strava_callback(cls, code=None, state=None, _user=None):
-        access_token, refresh_token, expires_at = stravaapi.get_token(code)
-        logger.warn("access_token = %r, refresh_token = %r, expires_at = %r", access_token, refresh_token, expires_at)
-        queries.update_user(
-            user_id=_user.user_id,
-            access_token=access_token,
-            refresh_token=refresh_token,
-            expires_at=datetime.datetime.utcfromtimestamp(expires_at),
-        )
+        stravaapi.get_token(_user, code)
         r = redirect(state)
         return HttpResponse(content=r.response, status=r.status, content_type=r.content_type, headers=r.headers)
 
     @classmethod
     def strava_refresh(cls, _user=None):
-        access_token, refresh_token, expires_at = stravaapi.refresh_token(_user)
-        logger.warn("access_token = %r, refresh_token = %r, expires_at = %r", access_token, refresh_token, expires_at)
-        queries.update_user(
-            user_id=_user.user_id,
-            access_token=access_token,
-            refresh_token=refresh_token,
-            expires_at=datetime.datetime.utcfromtimestamp(expires_at),
-        )
-
-        return "{} - {} - {}".format(access_token, refresh_token, expires_at)
+        stravaapi.refresh_token(_user)
+        return {}
 
     @classmethod
     def strava_update(cls, _user=None):

@@ -4,6 +4,7 @@ import numpy
 import os
 import pytz
 import requests
+import time
 import urllib.parse
 
 from . import queries
@@ -30,10 +31,12 @@ class StravaError(Exception):
     def __str__(self):
         return "StravaError(message=%r, errors=%r, code=%r)"
 
+
 def get_auth_code(user):
-    logger.warning("expires at %r now = %r", user.expires_at, datetime.datetime.utcnow())
     if user.expires_at <= datetime.datetime.utcnow():
-        user.access_token, user.refresh_token, user.expires_at = refresh_token(user)
+        logger.warning("expires at %r now = %r", user.expires_at, datetime.datetime.utcnow())
+        user.access_token = refresh_token(user)
+
     return user.access_token
 
     
@@ -56,7 +59,7 @@ def redirect_token(return_to_url='/'):
     return authorize_url
 
 
-def get_token(code):
+def get_token(user, code):
     access_token_url = 'https://www.strava.com/oauth/token'
     access_token_data = {
         'client_id': client_id,
@@ -71,7 +74,14 @@ def get_token(code):
     )
 
     data = response.json()
-    return data['access_token'], data['refresh_token'], data['expires_at']
+    queries.update_user(
+        user_id=user.user_id,
+        access_token=data['access_token'],
+        refresh_token=data['refresh_token'],
+        expires_at=datetime.datetime.utcfromtimestamp(data['expires_at']),
+    )
+
+    return data['access_token']
 
 
 def refresh_token(user):
@@ -90,8 +100,16 @@ def refresh_token(user):
     )
 
     data = response.json()
-    logger.warning("refresh token data = %r", data)
-    return data['access_token'], data['refresh_token'], data['expires_at']
+
+    queries.update_user(
+        user_id=user.user_id,
+        access_token=data['access_token'],
+        refresh_token=data['refresh_token'],
+        expires_at=datetime.datetime.utcfromtimestamp(data['expires_at']),
+    )
+
+
+    return data['access_token']
 
 
 def build_url(pieces):
@@ -106,7 +124,7 @@ def strava_fetch(user, url, **kwargs):
     url_args = ("?" + urllib.parse.urlencode(kwargs)) if len(kwargs) else ''
     full_url = url + url_args
     headers = {'api-key': str(client_id), 'authorization': 'Bearer %s' % get_auth_code(user)}
-    logger.warning("fetch url=%r, headers=%r", full_url, headers)
+    # logger.warning("fetch url=%r, headers=%r", full_url, headers)
     response = requests.get(url=full_url, verify=True, headers=headers)
     ourjson = response.json()
 
@@ -180,12 +198,13 @@ def tznow():
 @queries.SQL.is_transaction
 def activities_sync_one(user, activity, full=False, rebuild=False):
     activity_id = activity['id']
-    logger.warning("Syncing activity %r", activity_id)
     act = queries.activity(strava_activity_id=activity_id)
 
     # If we already have this one, let's not resync
     if act and not rebuild:
         return
+
+    logger.warning("Syncing activity %r", activity_id)
 
     if 'segment_efforts' not in activity and full:
         return activities_sync_one(user, get_activity(user, activity['id']))
@@ -307,6 +326,7 @@ def segment_sync_one(segment):
 
 # Note, this actually downloads the data too, via the API
 def activity_stream_sync(user, activity, force=False):
+    t1 = time.time()
     logger.warning("Syncing activity stream id=%r", activity.strava_activity_id)
     current = queries.activity_streams(strava_activity_id=activity.strava_activity_id)
     if len(current) and not force:
@@ -324,6 +344,7 @@ def activity_stream_sync(user, activity, force=False):
         types.append(stream['type'])
         datas.append(stream['data'])
 
+    to_insert = []
     for datum in zip(*datas):
         s = queries.dictobj()
         s.strava_activity_id = activity.strava_activity_id
@@ -334,10 +355,13 @@ def activity_stream_sync(user, activity, force=False):
             else:
                 setattr(s, t, d)
 
-        queries.add_activity_streams(s)
+        to_insert.append(s.asdict())
+
+    queries.add_activity_streams(to_insert)
 
     power_curve_process(activity.strava_activity_id)
     speed_curve_process(activity.strava_activity_id)
+    logger.warn("Done with %r - took %0.2f", activity.strava_activity_id, time.time()-t1)
 
 
 def activity_segment_effort_ach_sync(segment_effort, achievements):
@@ -387,7 +411,7 @@ def power_curve_process(activity_id, delete=False):
         logger.warning("No stream data for %d", activity_id)
         return
 
-    logger.warning("Processing power curve for %d", activity_id)
+    logger.warning("Processing power curve for %d - %d", activity_id, len(stream_data))
 
     row = None
     for dat in stream_data:
@@ -410,13 +434,12 @@ def power_curve_process(activity_id, delete=False):
         last = row
 
     segments.append(this_segment)
-
-    max_seconds = row[0] - first
+    max_seconds = min(row[0] - first, 20*60)
     intervals = list(range(1, 10, 1))
     intervals.extend(range(10, 5*60, 10))
     intervals.extend(range(5*60, 15*60, 30))
     intervals.extend(range(15*60, max_seconds, 60))
-
+    curves = []
     for win in intervals:
         val = max([power_curve_window(s, win) for s in segments])
         if val == 0:
@@ -426,9 +449,9 @@ def power_curve_process(activity_id, delete=False):
         p.interval_length = win
         p.watts = val
         p.strava_activity_id = activity_id
-        # p.start_index = 0
-        # p.end_index = 0
-        queries.add_power_curves(p)
+        curves.append(p.asdict())
+
+    queries.add_power_curves(curves)
 
 
 def speed_curve_window(data, length):
@@ -491,6 +514,7 @@ def speed_curve_process(activity_id, delete=False):
     intervals.extend(range(5*60, 15*60, 30))
     intervals.extend(range(15*60, max_seconds, 60))
 
+    curves = []
     for win in intervals:
         val = max([speed_curve_window(s, win) for s in segments])
 
@@ -502,6 +526,6 @@ def speed_curve_process(activity_id, delete=False):
         s.interval_length = win
         s.speed = val
         s.strava_activity_id = activity_id
-        # s.start_index = 0
-        # s.end_index = 0
-        queries.add_speed_curves(s)
+        curves.append(s.asdict())
+
+    queries.add_speed_curves(curves)
