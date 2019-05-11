@@ -214,6 +214,7 @@ class Interface(Api):
         t4 = time.time()
 
         buildings = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building')
+        areas = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='place')
 
         nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
         t5 = time.time()
@@ -239,22 +240,26 @@ class Interface(Api):
             # logger.warn("%r", dist)
             if (dist > 20):
                 pts.append(p)
+        offroad = gpd.GeoDataFrame(crs='espg:4326', geometry=[Point(p) for p in pts])
+        t6 = time.time()
 
         with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png') as tf:
             fig, ax = plt.subplots(figsize=(12,12))
             ax.set_aspect('equal')
 
             # area.plot(ax=ax, facecolor='black')
+            areas.plot(ax=ax, edgecolor='purple', facecolor='pink')
             edges.plot(ax=ax, linewidth=1, edgecolor='#BC8F8F')
             buildings.plot(ax=ax, facecolor='#eeeeee', alpha=1)
-            route.plot(ax=ax, alpha=0.5, markersize=1, color='red')
+            route.plot(ax=ax, alpha=0.5, linewidth=1, color='red')
+            offroad.plot(ax=ax, alpha=1, markersize=1, color='green')
             plt.tight_layout()
             plt.axis('off')
 
             plt.savefig(tf.name, dpi=200)
 
             te = time.time()
-            logger.warn("%0.3f %0.3f %0.3f %0.3f %0.3f", t2-t1, t3-t2, t4-t3, t5-t4, te-t5)
+            logger.warn("%0.3f %0.3f %0.3f %0.3f %0.3f %0.3f", t2-t1, t3-t2, t4-t3, t5-t4, t6-t5, te-t6)
 
             return HttpResponse(
                 content=open(tf.name, 'rb').read(),
