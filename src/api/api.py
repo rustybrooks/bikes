@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use('Agg')
 import osmnx as ox
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 import datetime
 from flask import Flask, request, render_template, session, redirect, url_for, escape
@@ -115,6 +115,59 @@ class Interface(Api):
         return "done"
 
     @classmethod
+    def _point_to_line_dist(cls, point, line):
+        """Calculate the distance between a point and a line segment.
+
+        To calculate the closest distance to a line segment, we first need to check
+        if the point projects onto the line segment.  If it does, then we calculate
+        the orthogonal distance from the point to the line.
+        If the point does not project to the line segment, we calculate the
+        distance to both endpoints and take the shortest distance.
+
+        :param point: Numpy array of form [x,y], describing the point.
+        :type point: numpy.core.multiarray.ndarray
+        :param line: list of endpoint arrays of form [P1, P2]
+        :type line: list of numpy.core.multiarray.ndarray
+        :return: The minimum distance to a point.
+        :rtype: float
+        """
+        # unit vector
+        unit_line = line[1] - line[0]
+        norm_unit_line = unit_line / np.linalg.norm(unit_line)
+
+        # compute the perpendicular distance to the theoretical infinite line
+        segment_dist = (
+            np.linalg.norm(np.cross(line[1] - line[0], line[0] - point)) /
+            np.linalg.norm(unit_line)
+        )
+
+        diff = (
+            (norm_unit_line[0] * (point[0] - line[0][0])) +
+            (norm_unit_line[1] * (point[1] - line[0][1]))
+        )
+
+        x_seg = (norm_unit_line[0] * diff) + line[0][0]
+        y_seg = (norm_unit_line[1] * diff) + line[0][1]
+
+        endpoint_dist = min(
+            np.linalg.norm(line[0] - point),
+            np.linalg.norm(line[1] - point)
+        )
+
+        # decide if the intersection point falls on the line segment
+        lp1_x = line[0][0]  # line point 1 x
+        lp1_y = line[0][1]  # line point 1 y
+        lp2_x = line[1][0]  # line point 2 x
+        lp2_y = line[1][1]  # line point 2 y
+        is_betw_x = lp1_x <= x_seg <= lp2_x or lp2_x <= x_seg <= lp1_x
+        is_betw_y = lp1_y <= y_seg <= lp2_y or lp2_y <= y_seg <= lp1_y
+        if is_betw_x and is_betw_y:
+            return segment_dist
+        else:
+            # if not, then return the minimum distance to the segment endpoints
+            return endpoint_dist
+
+    @classmethod
     def _dist_pt_to_seg(cls, p, seg):
         import math
 
@@ -183,6 +236,8 @@ class Interface(Api):
 #        ]
 #            queries.SQL.delete(table)
 
+
+
     @classmethod
     @Api.config(require_login=is_logged_in)
     def test(cls):
@@ -194,9 +249,13 @@ class Interface(Api):
         t1 = time.time()
         data = queries.activity_streams(strava_activity_id=2347770699, sort='time')
 
+#        route = gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
+#            LineString([(a.long, a.lat), (b.long, b.lat)]) for a, b in zip(data[:-1], data[1:])
+#        ])
         route = gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
-            LineString([(a.long, a.lat), (b.long, b.lat)]) for a, b in zip(data[:-1], data[1:])
+            Point((a.long, a.lat)) for a in data
         ])
+
         # gdf_projected = gdf.to_crs('utm')
 
         north = max([x.lat for x in data])
@@ -207,59 +266,75 @@ class Interface(Api):
         t2 = time.time()
         G = ox.graph_from_bbox(
             north, south, east, west,
-            truncate_by_edge=True, simplify=False, clean_periphery=False, network_type='all'
+            truncate_by_edge=True, simplify=True, clean_periphery=False, network_type='all'
         )
         t3 = time.time()
-        # G_projected = ox.project_graph(G)
+        G_p = ox.project_graph(G)
         t4 = time.time()
 
-        buildings = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building')
-        areas = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='place')
+#        buildings = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building')
+#         areas = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='place')
+        nodes_p, edges_p = ox.graph_to_gdfs(G_p, nodes=True, edges=True)
 
-        nodes, edges = ox.graph_to_gdfs(G, nodes=True, edges=True)
+        t4a = time.time()
+        buildings_p = ox.project_gdf(buildings)
+        # nodes_p = ox.project_gdf(nodes)
+#        edges_p = ox.project_gdf(edges)
+        route_p = ox.project_gdf(route)
+
         t5 = time.time()
-        logger.warn("%r - %r", len(nodes), len(edges))
+        logger.warn("%r - %r", len(nodes_p), len(edges_p))
 
-        trunc_data = data
-        e = ox.get_nearest_edges(G, X=[x.long for x in trunc_data], Y=[x.lat for x in trunc_data], method='balltree')
+        geom = route_p['geometry']
+        logger.warn(".....")
+        X = [x.x for x in geom]
+        Y = [x.y for x in geom]
+        # logger.warn("X=%r, Y=%r", X, Y)
+        e = ox.get_nearest_edges(G_p, X=X, Y=Y, method='kdtree', dist=1)
+        logger.warn("after nearest")
+        t6 = time.time()
+
+        logger.warn("e = %r", e[0])
+
         pts = []
-        for x, d in zip(e, trunc_data):
+        for x, d in zip(e, geom):
             # e = edges.loc[x]
 #            logger.warn("e = %r %r", e, dir(e))
 #            logger.warn("x = %r", x.__class__)
-            n1 = nodes.loc[x[0]]
-            n2 = nodes.loc[x[1]]
-#            logger.warn("%r %r", n1.x, n1.y)
+            n1 = nodes_p.loc[x[0]]
+            n2 = nodes_p.loc[x[1]]
+            # logger.warn("%r %r", n1.x, n1.y)
 #            logger.warn("%r", cls._dist((n1.x, n1.y), (n2.x, n2.y)))
-            p = (d.long, d.lat)
-            seg = (
-                (n1.x, n1.y),
-                (n2.x, n2.y)
-            )
-            dist = cls._dist_pt_to_seg(p, seg)
+            p = np.array((d.x, d.y))
+            seg = [
+                np.array((n1.x, n1.y)),
+                np.array((n2.x, n2.y))
+            ]
+            dist = cls._point_to_line_dist(p, seg)
             # logger.warn("%r", dist)
             if (dist > 20):
                 pts.append(p)
-        offroad = gpd.GeoDataFrame(crs='espg:4326', geometry=[Point(p) for p in pts])
-        t6 = time.time()
+        offroad_p = gpd.GeoDataFrame(crs={'init': 'espg:4326'}, geometry=[Point(p) for p in pts])
+        # offroad_p = ox.project_gdf(offroad)
+        t7 = time.time()
 
         with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png') as tf:
             fig, ax = plt.subplots(figsize=(12,12))
             ax.set_aspect('equal')
 
             # area.plot(ax=ax, facecolor='black')
-            areas.plot(ax=ax, edgecolor='purple', facecolor='pink')
-            edges.plot(ax=ax, linewidth=1, edgecolor='#BC8F8F')
-            buildings.plot(ax=ax, facecolor='#eeeeee', alpha=1)
-            route.plot(ax=ax, alpha=0.5, linewidth=1, color='red')
-            offroad.plot(ax=ax, alpha=1, markersize=1, color='green')
+            # areas_p.plot(ax=ax, edgecolor='purple', facecolor='pink')
+            edges_p.plot(ax=ax, linewidth=1, edgecolor='#BC8F8F')
+            buildings_p.plot(ax=ax, facecolor='#eeeeee', alpha=1)
+            route_p.plot(ax=ax, alpha=0.5, linewidth=1, markersize=1, color='red')
+            offroad_p.plot(ax=ax, alpha=1, markersize=1, color='green')
             plt.tight_layout()
             plt.axis('off')
-
-            plt.savefig(tf.name, dpi=200)
+            plt.subplots_adjust(hspace=0, wspace=0, left=0, top=1, right=1, bottom=0)
+            plt.savefig(tf.name, dpi=300)
 
             te = time.time()
-            logger.warn("%0.3f %0.3f %0.3f %0.3f %0.3f %0.3f", t2-t1, t3-t2, t4-t3, t5-t4, t6-t5, te-t6)
+            logger.warn("%0.3f %0.3f %0.3f %0.3f %0.3f %0.3f %0.3f %0.3f", t2-t1, t3-t2, t4-t3, t4a-t4, t5-t4a, t6-t5, t7-t6, te-t7)
 
             return HttpResponse(
                 content=open(tf.name, 'rb').read(),
