@@ -17,6 +17,10 @@ from lib.api_framework import api_register, Api, HttpResponse, api_bool
 from flask_cors import CORS
 import flask_login
 
+import pandas as pd  # Reading csv file
+from shapely.geometry import Point, LineString  # Shapely for converting latitude/longtitude to geometry
+import geopandas as gpd  # To create GeodataFrame
+
 osmnx_cache_dir = '/srv/data/osmnx_cache'
 if not os.path.exists(osmnx_cache_dir):
     os.makedirs(osmnx_cache_dir)
@@ -63,6 +67,90 @@ app.secret_key = '60c5c072f919967af78b7acdc352ce34328d36df2a06e970d2d7ec905aa349
 
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
+
+
+
+def get_nearest_edges(edges, X, Y, method=None, dist=0.0001):
+    """
+    Return the graph edges nearest to a list of points. Pass in points
+    as separate vectors of X and Y coordinates. The 'kdtree' method
+    is by far the fastest with large data sets, but only finds approximate
+    nearest edges if working in unprojected coordinates like lat-lng (it
+    precisely finds the nearest edge if working in projected coordinates).
+    The 'balltree' method is second fastest with large data sets, but it
+    is precise if working in unprojected coordinates like lat-lng.
+
+    Parameters
+    ----------
+    G : networkx multidigraph
+    X : list-like
+        The vector of longitudes or x's for which we will find the nearest
+        edge in the graph. For projected graphs, use the projected coordinates,
+        usually in meters.
+    Y : list-like
+        The vector of latitudes or y's for which we will find the nearest
+        edge in the graph. For projected graphs, use the projected coordinates,
+        usually in meters.
+    method : str {None, 'kdtree', 'balltree'}
+        Which method to use for finding nearest edge to each point.
+        If None, we manually find each edge one at a time using
+        osmnx.utils.get_nearest_edge. If 'kdtree' we use
+        scipy.spatial.cKDTree for very fast euclidean search. Recommended for
+        projected graphs. If 'balltree', we use sklearn.neighbors.BallTree for
+        fast haversine search. Recommended for unprojected graphs.
+
+    dist : float
+        spacing length along edges. Units are the same as the geom; Degrees for
+        unprojected geometries and meters for projected geometries. The smaller
+        the value, the more points are created.
+
+    Returns
+    -------
+    ne : ndarray
+        array of nearest edges represented by their startpoint and endpoint ids,
+        u and v, the OSM ids of the nodes.
+
+    Info
+    ----
+    The method creates equally distanced points along the edges of the network.
+    Then, these points are used in a kdTree or BallTree search to identify which
+    is nearest.Note that this method will not give the exact perpendicular point
+    along the edge, but the smaller the *dist* parameter, the closer the solution
+    will be.
+
+    Code is adapted from an answer by JHuw from this original question:
+    https://gis.stackexchange.com/questions/222315/geopandas-find-nearest-point
+    -in-other-dataframe
+    """
+    # check if we were able to import scipy.spatial.cKDTree successfully
+    if not ox.cKDTree:
+        raise ImportError('The scipy package must be installed to use this optional feature.')
+
+#    # transform graph into DataFrame
+#    edges = ox.graph_to_gdfs(G, nodes=False, fill_edge_geometry=True)
+
+    # transform edges into evenly spaced points
+    edges['points'] = edges.apply(lambda x: ox.redistribute_vertices(x.geometry, dist), axis=1)
+
+    # develop edges data for each created points
+    extended = edges['points'].apply([ox.pd.Series]).stack().reset_index(level=1, drop=True).join(edges).reset_index()
+
+    # Prepare btree arrays
+    nbdata = np.array(list(zip(extended['Series'].apply(lambda x: x.x),
+                               extended['Series'].apply(lambda x: x.y))))
+
+    # build a k-d tree for euclidean nearest node search
+    btree = ox.cKDTree(data=nbdata, compact_nodes=True, balanced_tree=True)
+
+    # query the tree for nearest node to each point
+    points = np.array([X, Y]).T
+    dist, idx = btree.query(points, k=1)  # Returns ids of closest point
+    logger.warn("dist1=%r", dist)
+    eidx = extended.loc[idx, 'index']
+    ne = edges.loc[eidx, ['u', 'v']]
+
+    return dist, np.array(ne)
+
 
 
 def is_logged_in(request, api_data, url_data):
@@ -115,148 +203,17 @@ class Interface(Api):
         return "done"
 
     @classmethod
-    def _point_to_line_dist(cls, point, line):
-        """Calculate the distance between a point and a line segment.
-
-        To calculate the closest distance to a line segment, we first need to check
-        if the point projects onto the line segment.  If it does, then we calculate
-        the orthogonal distance from the point to the line.
-        If the point does not project to the line segment, we calculate the
-        distance to both endpoints and take the shortest distance.
-
-        :param point: Numpy array of form [x,y], describing the point.
-        :type point: numpy.core.multiarray.ndarray
-        :param line: list of endpoint arrays of form [P1, P2]
-        :type line: list of numpy.core.multiarray.ndarray
-        :return: The minimum distance to a point.
-        :rtype: float
-        """
-        # unit vector
-        unit_line = line[1] - line[0]
-        norm_unit_line = unit_line / np.linalg.norm(unit_line)
-
-        # compute the perpendicular distance to the theoretical infinite line
-        segment_dist = (
-            np.linalg.norm(np.cross(line[1] - line[0], line[0] - point)) /
-            np.linalg.norm(unit_line)
-        )
-
-        diff = (
-            (norm_unit_line[0] * (point[0] - line[0][0])) +
-            (norm_unit_line[1] * (point[1] - line[0][1]))
-        )
-
-        x_seg = (norm_unit_line[0] * diff) + line[0][0]
-        y_seg = (norm_unit_line[1] * diff) + line[0][1]
-
-        endpoint_dist = min(
-            np.linalg.norm(line[0] - point),
-            np.linalg.norm(line[1] - point)
-        )
-
-        # decide if the intersection point falls on the line segment
-        lp1_x = line[0][0]  # line point 1 x
-        lp1_y = line[0][1]  # line point 1 y
-        lp2_x = line[1][0]  # line point 2 x
-        lp2_y = line[1][1]  # line point 2 y
-        is_betw_x = lp1_x <= x_seg <= lp2_x or lp2_x <= x_seg <= lp1_x
-        is_betw_y = lp1_y <= y_seg <= lp2_y or lp2_y <= y_seg <= lp1_y
-        if is_betw_x and is_betw_y:
-            return segment_dist
-        else:
-            # if not, then return the minimum distance to the segment endpoints
-            return endpoint_dist
-
-    @classmethod
-    def _dist_pt_to_seg(cls, p, seg):
-        import math
-
-        def dis(latA, lonA, latB, lonB):
-            R = 6371000
-            return math.acos(math.sin(latA) * math.sin(latB) + math.cos(latA) * math.cos(latB) * math.cos(lonB - lonA)) * R
-
-        def bear(latA, lonA, latB, lonB):
-            return math.atan2(math.sin(lonB - lonA) * math.cos(latB), math.cos(latA) * math.sin(latB) - math.sin(latA) * math.cos(latB) * math.cos(lonB - lonA) )
-
-        lat1, lon1 = seg[0]
-        lat2, lon2 = seg[1]
-        lat3, lon3 = p
-
-        lat1 = math.radians(lat1)
-        lat2 = math.radians(lat2)
-        lat3 = math.radians(lat3)
-        lon1 = math.radians(lon1)
-        lon2 = math.radians(lon2)
-        lon3 = math.radians(lon3)
-
-        R = 6371000.  # Earth's radius in meters
-
-        bear12 = bear(lat1, lon1, lat2, lon2)
-        bear13 = bear(lat1, lon1, lat3, lon3)
-        dis13 = dis(lat1, lon1, lat3, lon3)
-
-        if abs(bear13 - bear12) > (math.pi / 2.):
-            dxa = dis13
-        else:
-            dxt = math.asin(math.sin(dis13 / R) * math.sin(bear13 - bear12)) * R
-
-            dis12 = dis(lat1, lon1, lat2, lon2)
-            dis14 = math.acos(math.cos(dis13 / R) / math.cos(dxt / R)) * R
-            if dis14 > dis12:
-                dxa = dis(lat2, lon2, lat3, lon3)
-            else:
-                dxa = abs(dxt)
-
-        return dxa
-
-    @classmethod
-    def _dist(cls, origin, destination):
-        import math
-
-        lat1, lon1 = origin
-        lat2, lon2 = destination
-        radius = 6371  # km
-
-        dlat = math.radians(lat2 - lat1)
-        dlon = math.radians(lon2 - lon1)
-        a = (math.sin(dlat / 2) * math.sin(dlat / 2) +
-             math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) *
-             math.sin(dlon / 2) * math.sin(dlon / 2))
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-        d = radius * c
-        return d
-
-#    @classmethod
-#    def delete_all(cls):
-#        for table in [
-#            'speed_curves', 'power_curves', 'strava_activity_streams',
-#            'strava_activity_segment_effort_achs', 'strava_activity_segment_effort',
-#            'strava_segments', 'strava_activities'
-#
-#        ]
-#            queries.SQL.delete(table)
-
-
-
-    @classmethod
     @Api.config(require_login=is_logged_in)
     def test(cls):
-        # importing libraries
-        import pandas as pd  # Reading csv file
-        from shapely.geometry import Point, LineString  # Shapely for converting latitude/longtitude to geometry
-        import geopandas as gpd  # To create GeodataFrame
-
         t1 = time.time()
         data = queries.activity_streams(strava_activity_id=2347770699, sort='time')
 
 #        route = gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
 #            LineString([(a.long, a.lat), (b.long, b.lat)]) for a, b in zip(data[:-1], data[1:])
 #        ])
-        route = gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
+        route_p = ox.project_gdf(gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
             Point((a.long, a.lat)) for a in data
-        ])
-
-        # gdf_projected = gdf.to_crs('utm')
+        ]))
 
         north = max([x.lat for x in data])
         south = min([x.lat for x in data])
@@ -264,70 +221,51 @@ class Interface(Api):
         west = min([x.long for x in data])
 
         t2 = time.time()
-        G = ox.graph_from_bbox(
+        G_p = ox.project_graph(ox.graph_from_bbox(
             north, south, east, west,
-            truncate_by_edge=True, simplify=True, clean_periphery=False, network_type='all'
-        )
+            truncate_by_edge=True,
+            simplify=True,
+            clean_periphery=False,
+            network_type='all'
+        ))
         t3 = time.time()
-        G_p = ox.project_graph(G)
         t4 = time.time()
 
-        buildings = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building')
-#         areas = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='place')
+        buildings_p = ox.project_gdf(ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building'))
+        # areas = ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='place')
         nodes_p, edges_p = ox.graph_to_gdfs(G_p, nodes=True, edges=True)
 
         t4a = time.time()
-        buildings_p = ox.project_gdf(buildings)
-        # nodes_p = ox.project_gdf(nodes)
-#        edges_p = ox.project_gdf(edges)
-        route_p = ox.project_gdf(route)
-
         t5 = time.time()
         logger.warn("%r - %r", len(nodes_p), len(edges_p))
 
-        geom = route_p['geometry']
+        geom = route_p['geometry'][::1]
         logger.warn(".....")
         X = [x.x for x in geom]
         Y = [x.y for x in geom]
         # logger.warn("X=%r, Y=%r", X, Y)
-        e = ox.get_nearest_edges(G_p, X=X, Y=Y, method='kdtree', dist=1)
+        dists, edges = get_nearest_edges(edges_p, X=X, Y=Y, method='kdtree', dist=1)
         logger.warn("after nearest")
         t6 = time.time()
 
-        logger.warn("e = %r", e[0])
-
         pts = []
-        for x, d in zip(e, geom):
-            # e = edges.loc[x]
-#            logger.warn("e = %r %r", e, dir(e))
-#            logger.warn("x = %r", x.__class__)
-            n1 = nodes_p.loc[x[0]]
-            n2 = nodes_p.loc[x[1]]
-            # logger.warn("%r %r", n1.x, n1.y)
-#            logger.warn("%r", cls._dist((n1.x, n1.y), (n2.x, n2.y)))
-            p = np.array((d.x, d.y))
-            seg = [
-                np.array((n1.x, n1.y)),
-                np.array((n2.x, n2.y))
-            ]
-            dist = cls._point_to_line_dist(p, seg)
-            # logger.warn("%r", dist)
+        for dist, g in zip(dists, geom):
             if (dist > 20):
-                pts.append(p)
+                pts.append(g)
+
         offroad_p = gpd.GeoDataFrame(crs={'init': 'espg:4326'}, geometry=[Point(p) for p in pts])
-        # offroad_p = ox.project_gdf(offroad)
         t7 = time.time()
 
         with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png') as tf:
             fig, ax = plt.subplots(figsize=(12,12))
             ax.set_aspect('equal')
 
-            # area.plot(ax=ax, facecolor='black')
             # areas_p.plot(ax=ax, edgecolor='purple', facecolor='pink')
             edges_p.plot(ax=ax, linewidth=1, edgecolor='#BC8F8F')
+            #nodes_p.plot(ax=ax, markersize=1, color='blue')
             buildings_p.plot(ax=ax, facecolor='#eeeeee', alpha=1)
-            route_p.plot(ax=ax, alpha=0.5, linewidth=1, markersize=1, color='red')
-            offroad_p.plot(ax=ax, alpha=1, markersize=1, color='green')
+            route_p.plot(ax=ax, alpha=0.25, linewidth=1, markersize=1, color='red')
+            offroad_p.plot(ax=ax, alpha=.6, markersize=1, color='green')
             plt.tight_layout()
             plt.axis('off')
             plt.subplots_adjust(hspace=0, wspace=0, left=0, top=1, right=1, bottom=0)
@@ -340,7 +278,6 @@ class Interface(Api):
                 content=open(tf.name, 'rb').read(),
                 content_type='image/png',
             )
-
 
 
 @api_register(None, require_login=is_logged_in)
