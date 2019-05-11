@@ -204,10 +204,10 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
     if act and not rebuild:
         return
 
-    logger.warning("Syncing activity %r", activity_id)
-
     if 'segment_efforts' not in activity and full:
         return activities_sync_one(user, get_activity(user, activity['id']))
+
+    logger.warning("Syncing activity %r", activity_id)
 
     new = not bool(act)
     if not act:
