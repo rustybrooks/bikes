@@ -69,65 +69,11 @@ login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
 
 
-
 def get_nearest_edges(edges, X, Y, method=None, dist=0.0001):
-    """
-    Return the graph edges nearest to a list of points. Pass in points
-    as separate vectors of X and Y coordinates. The 'kdtree' method
-    is by far the fastest with large data sets, but only finds approximate
-    nearest edges if working in unprojected coordinates like lat-lng (it
-    precisely finds the nearest edge if working in projected coordinates).
-    The 'balltree' method is second fastest with large data sets, but it
-    is precise if working in unprojected coordinates like lat-lng.
-
-    Parameters
-    ----------
-    G : networkx multidigraph
-    X : list-like
-        The vector of longitudes or x's for which we will find the nearest
-        edge in the graph. For projected graphs, use the projected coordinates,
-        usually in meters.
-    Y : list-like
-        The vector of latitudes or y's for which we will find the nearest
-        edge in the graph. For projected graphs, use the projected coordinates,
-        usually in meters.
-    method : str {None, 'kdtree', 'balltree'}
-        Which method to use for finding nearest edge to each point.
-        If None, we manually find each edge one at a time using
-        osmnx.utils.get_nearest_edge. If 'kdtree' we use
-        scipy.spatial.cKDTree for very fast euclidean search. Recommended for
-        projected graphs. If 'balltree', we use sklearn.neighbors.BallTree for
-        fast haversine search. Recommended for unprojected graphs.
-
-    dist : float
-        spacing length along edges. Units are the same as the geom; Degrees for
-        unprojected geometries and meters for projected geometries. The smaller
-        the value, the more points are created.
-
-    Returns
-    -------
-    ne : ndarray
-        array of nearest edges represented by their startpoint and endpoint ids,
-        u and v, the OSM ids of the nodes.
-
-    Info
-    ----
-    The method creates equally distanced points along the edges of the network.
-    Then, these points are used in a kdTree or BallTree search to identify which
-    is nearest.Note that this method will not give the exact perpendicular point
-    along the edge, but the smaller the *dist* parameter, the closer the solution
-    will be.
-
-    Code is adapted from an answer by JHuw from this original question:
-    https://gis.stackexchange.com/questions/222315/geopandas-find-nearest-point
-    -in-other-dataframe
-    """
+    """ this is a bastardized version of osmnx.get_nearest_edges, modified to only use kdtree and to return distances """
     # check if we were able to import scipy.spatial.cKDTree successfully
     if not ox.cKDTree:
         raise ImportError('The scipy package must be installed to use this optional feature.')
-
-#    # transform graph into DataFrame
-#    edges = ox.graph_to_gdfs(G, nodes=False, fill_edge_geometry=True)
 
     # transform edges into evenly spaced points
     edges['points'] = edges.apply(lambda x: ox.redistribute_vertices(x.geometry, dist), axis=1)
