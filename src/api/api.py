@@ -2,6 +2,7 @@ import datetime
 from flask import Flask, request, render_template, session, redirect, url_for, escape
 import logging
 import os
+import tempfile
 import time
 
 from lib import api_framework, config
@@ -80,7 +81,20 @@ class Interface(Api):
     @classmethod
     @Api.config(require_login=is_logged_in)
     def test(cls):
-        return "hi"
+        import matplotlib
+        matplotlib.use('Agg')
+
+        import osmnx as ox
+
+        G = ox.graph_from_point((37.79, -122.41), distance=750, network_type='all')
+
+        with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png') as tf:
+            ox.plot_graph(G, save=True, show=False, filename=tf.name)
+            tf.seek(0)
+            return HttpResponse(
+                content=tf.read(),
+                content_type='image/png',
+            )
 
 
 api_framework.app_class_proxy(app, '', '/', Interface())
