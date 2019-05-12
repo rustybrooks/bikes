@@ -41,7 +41,7 @@ else:
         config.get_config_key('DB_PASSWORD')
     )
 
-SQL = SQLFactory(sql_url, flask_storage=os.environ.get('FLASK_STORAGE', "1'") != "0")
+SQL = SQLFactory(sql_url, flask_storage=os.environ.get('FLASK_STORAGE', "0'") != "0")
 
 
 class User(object):

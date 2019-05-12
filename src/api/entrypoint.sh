@@ -13,6 +13,6 @@ while true; do
         python3 -m flask run --host=0.0.0.0
     fi
 
-    sleep 30
+    sleep 10
  done
 
