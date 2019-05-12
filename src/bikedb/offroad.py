@@ -62,10 +62,9 @@ def get_nearest_edges(edges, geom, dist=0.0001):
     points = np.array([X, Y]).T
     dist, idx = btree.query(points, k=1)  # Returns ids of closest point
     eidx = extended.loc[idx, 'index']
-    # ne = edges.loc[eidx, ['u', 'v']]
+    ne = edges.loc[eidx, ['u', 'v']]
 
-    return dist, None
-#        , np.array(ne)
+    return dist, np.array(ne)
 
 
 def find_offroad_segments(strava_activity_id, do_graph=False):
@@ -90,33 +89,39 @@ def find_offroad_segments(strava_activity_id, do_graph=False):
 
     geom = route_p['geometry']
     dists, edges = get_nearest_edges(edges_p, geom, dist=2)
-    offroad_p = gpd.GeoDataFrame(geometry=[Point(g) for d, g in zip(dists, geom) if d > 20])
+    # offroad_p = gpd.GeoDataFrame(geometry=[Point(g) for d, g in zip(dists, geom) if d > 20])
+    route_p['dist'] = np.minimum(np.maximum(dists, 10), 20)
+    logger.warn("dist = %r", route_p['dist'])
+    route_p['dist_w'] = [x for x in route_p['dist'].rolling(5, min_periods=0).max()]
 
     logger.warn("5")
 
     if do_graph:
-        return graph_offroad_segments(route, route_p, edges_p, offroad_p)
+        return graph_offroad_segments(route, route_p, edges_p)
 
 
-def graph_offroad_segments(route, route_p, edges_p, offroad_p):
+def graph_offroad_segments(route, route_p, edges_p):
     # west, south, east, north = route.total_bounds
     # buildings_p = ox.project_gdf(ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building'))
+
+    route_lp = gpd.GeoDataFrame(
+        geometry=[
+            LineString(x) for x in zip(route_p['geometry'][:-1], route_p['geometry'][1:])
+        ],
+    )
+    route_lp['dist_w'] = route_p['dist_w']
 
     with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png', delete=False) as tf:
         name = tf.name
         fig, ax = plt.subplots(figsize=(12, 12))
         ax.set_aspect('equal')
 
-        route_lp = gpd.GeoDataFrame(geometry=[
-            LineString(x) for x in zip(route_p['geometry'][:-1], route_p['geometry'][1:])
-        ])
-
         edges_p.plot(ax=ax, linewidth=1, edgecolor='#aaaaaa')
         # nodes_p.plot(ax=ax, markersize=1, color='blue')
         # buildings_p.plot(ax=ax, facecolor='#eeeeee', alpha=1)
-        # route_p.plot(ax=ax, alpha=0.5, markersize=1, color='blue')
-        route_lp.plot(ax=ax, alpha=0.5, linewidth=1.5, color='red')
-        offroad_p.plot(ax=ax, alpha=.6, markersize=1, color='green')
+        # route_p.plot(ax=ax, alpha=0.5, markersize=1, column='dist_w', cmap='spring', scheme='equal_interval')
+        route_lp.plot(ax=ax, alpha=0.5, linewidth=2, column='dist_w', cmap='brg', scheme='equal_interval')
+        # offroad_p.plot(ax=ax, alpha=.6, markersize=1, color='green')
         plt.tight_layout()
         plt.axis('off')
         plt.subplots_adjust(hspace=0, wspace=0, left=0, top=1, right=1, bottom=0)
