@@ -84,8 +84,8 @@ class Interface(Api):
 
     @classmethod
     @Api.config(require_login=is_logged_in)
-    def test(cls):
-        fn = offroad.find_offroad_segments(2347770699, do_graph=True)
+    def test(cls, strava_activity_id=None):
+        fn = offroad.find_offroad_segments(strava_activity_id or 2347770699, do_graph=True)
         resp = HttpResponse(
             content=open(fn, 'rb').read(),
             content_type='image/png',

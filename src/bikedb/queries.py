@@ -1,8 +1,6 @@
 import bcrypt
-import hashlib
 import logging
 import os
-import random
 
 from lib.database.sql import SQLBase, dictobj, chunked
 from lib import config
