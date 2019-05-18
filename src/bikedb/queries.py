@@ -118,8 +118,16 @@ def delete_user(username=None, email=None):
 ##############################################################
 # activities
 
-def activities(strava_activity_id=None, type=None, type_in=None):
+def activities(strava_activity_id=None, type=None, type_in=None, start_datetime_before=None, start_datetime_after=None):
     where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id, type=type)
+
+    if start_datetime_after:
+        where += ["start_datetime >= :sda"]
+        bindvars['sda'] = start_datetime_after
+
+    if start_datetime_before:
+        where += ["start_datetime <= :sdb"]
+        bindvars['sdb'] = start_datetime_before
 
     if type_in:
         n = 0
