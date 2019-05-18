@@ -100,7 +100,7 @@ def refresh_token(user):
     )
 
     data = response.json()
-
+    logger.warn("refresh data = %r", data)
     queries.update_user(
         user_id=user.user_id,
         access_token=data['access_token'],

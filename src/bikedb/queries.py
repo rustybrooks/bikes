@@ -118,7 +118,10 @@ def delete_user(username=None, email=None):
 ##############################################################
 # activities
 
-def activities(strava_activity_id=None, type=None, type_in=None, start_datetime_before=None, start_datetime_after=None):
+def activities(
+    strava_activity_id=None, type=None, type_in=None, start_datetime_before=None, start_datetime_after=None,
+    page=None, limit=None, sort=None,
+):
     where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id, type=type)
 
     if start_datetime_after:
@@ -140,7 +143,15 @@ def activities(strava_activity_id=None, type=None, type_in=None, start_datetime_
 
         where += 'type in ({})'.format(','.join([x for x in tv]))
 
-    query = "select * from strava_activities {}".format(SQL.where_clause(where))
+    query = """
+        select * from strava_activities 
+        {where}
+        {sort} {limit}
+    """.format(
+        where=SQL.where_clause(where),
+        sort=SQL.orderby(sort),
+        limit=SQL.limit(page=page, limit=limit),
+    )
     return list(SQL.select_foreach(query, bindvars))
 
 

@@ -3,6 +3,7 @@
 import matplotlib
 matplotlib.use('Agg')
 
+import datetime
 import geopandas as gpd
 from geopandas.plotting import plot_polygon_collection, plot_linestring_collection
 import logging
@@ -14,6 +15,7 @@ import osmnx as ox
 import pandas as pd
 import pickle
 from shapely.geometry import Point, LineString
+import shutil
 import sys
 import tempfile
 import time
@@ -46,19 +48,34 @@ sys.path.append(root)
 from bikedb import queries
 
 
+counts = {}
+
+
 def geom_loader(name, geom_key, generator):
+    if name not in counts:
+        counts[name] = {
+            'load': 0,
+            'generate': 0,
+            'mem': 0,
+        }
+
     key_str = ':'.join([str(x) for x in geom_key])
 
     memkey = "{}:{}".format(name, key_str)
-    if memkey not in geom_mem_cache:
+
+    if memkey in geom_mem_cache:
+        counts[name]['mem'] += 1
+    else:
         dirname = os.path.join(geom_cache_dir, name)
         filename = os.path.join(dirname, key_str)
         if os.path.exists(filename):
-            logger.warn("loading %r", filename)
+            counts[name]['load'] += 1
+            # logger.warn("loading %r", filename)
             with open(filename, "rb") as f:
                 data = pickle.load(f)
         else:
-            logger.warn("saving %r", filename)
+#            logger.warn("saving %r", filename)
+            counts[name]['generate'] += 1
             data = generator()
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
@@ -79,7 +96,9 @@ def debounce_triggers(dists, triggers_off, triggers_on):
             if last == 0:
                 pass
             else:
-                segments[-1][1] = t
+                # logger.warn("segments = %r", segments)
+                if segments:
+                    segments[-1][1] = t
 
             last = t
             continue
@@ -99,9 +118,10 @@ def debounce_triggers(dists, triggers_off, triggers_on):
 
         last = t
 
-    segments.append(
-        [last, -1, 'on' if segments[-1][2] == 'off' else 'on']
-    )
+    if segments:
+        segments.append(
+            [last, -1, 'on' if segments[-1][2] == 'off' else 'on']
+        )
 
     # print(segments)
     return segments
@@ -141,7 +161,7 @@ def get_nearest_edges(edges, geom, dist=0.0001):
 
 
 def nearest_edges_kdtree(grid_key, crs, dist):
-    edges = geom_loader('grid_edges', grid_key, lambda: load_grid_edges(grid_key[1], grid_key[2], crs))
+    edges = geom_loader('grid_edges', grid_key, lambda: load_grid_edges(grid_key[-2], grid_key[-1], crs))
 
     # transform edges into evenly spaced points
     edges['points'] = edges.apply(lambda x: ox.redistribute_vertices(x.geometry, dist), axis=1)
@@ -214,48 +234,51 @@ def find_offroad_segments(strava_activity_id, do_graph=False):
     route_seg_p = geom_loader('offroad_segments', (strava_activity_id, ), lambda: find_offroad_segments_internal(strava_activity_id))
 
     if do_graph:
-        # west, south, east, north = route.total_bounds
-        # buildings_p = ox.project_gdf(ox.create_footprints_gdf(north=north, south=south, east=east, west=west, footprint_type='building'))
+        data = queries.activity_streams(strava_activity_id=strava_activity_id, sort='time')[::10]
+        if not len(data):
+            return None
 
-        # route_lp = gpd.GeoDataFrame(
-        #     geometry=[
-        #         LineString(x) for x in zip(route_p['geometry'][:-1], route_p['geometry'][1:])
-        #     ],
-        # )
-        # route_lp['dist_w'] = route_p['dist_w']
+        route = gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
+            Point((a.long, a.lat)) for a in data
+        ])
+        west, south, east, north = route.total_bounds
+        tgp = ox.project_graph(ox.graph_from_bbox(
+            north, south, east, west,
+            truncate_by_edge=True, simplify=True, clean_periphery=False, network_type='all', retain_all=True
+        ))
+        tnp, edges_p = ox.graph_to_gdfs(tgp, nodes=True, edges=True)
 
         with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png', delete=False) as tf:
             name = tf.name
             fig, ax = plt.subplots(figsize=(12, 12))
-            # ax.set_aspect('equal')
-
-            # edges_p.plot(ax=ax, linewidth=1, edgecolor='#aaaaaa')
-            #            for x in grid_edges:
-            #                x.plot(ax=ax, linewidth=1, edgecolor="#aaaaaa")
-
-            plot_linestring_collection(ax, route_seg_p['geometry'], colors=route_seg_p['colors'], linewidth=1.5,
-                                       alpha=0.5)
-            # boxes.plot(ax=ax, linewidth=1, edgecolor='purple')
+            edges_p.plot(ax=ax, linewidth=1, edgecolor='#aaaaaa')
+            plot_linestring_collection(ax, route_seg_p['geometry'], colors=route_seg_p['colors'], linewidth=1.5, alpha=0.5)
 
             plt.tight_layout()
             plt.axis('off')
             plt.subplots_adjust(hspace=0, wspace=0, left=0, top=1, right=1, bottom=0)
-            plt.savefig(tf.name, dpi=100)
+            plt.savefig(tf.name, dpi=300)
 
         return name
 
 
 def find_offroad_segments_internal(strava_activity_id):
-    t1 = time.time()
     thresh = 15
 
     data = queries.activity_streams(strava_activity_id=strava_activity_id, sort='time')
+    if not len(data):
+        return []
 
     route = gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
         Point((a.long, a.lat)) for a in data
     ])
-    route['time'] = [x.time for x in data]
     route_p = ox.project_gdf(route)
+
+    crs = route_p.crs
+    zone = None
+    for el in crs.split():
+        if 'zone' in el:
+            zone = el.split('=')[-1]
 
     lastkey = None
     geom = []
@@ -263,11 +286,11 @@ def find_offroad_segments_internal(strava_activity_id):
     for p in route_p['geometry']:
         grid_x = int(GRID_SIZE*math.floor(p.x/GRID_SIZE))
         grid_y = int(GRID_SIZE*math.floor(p.y/GRID_SIZE))
-        key = (GRID_SIZE, grid_x, grid_y)
+        key = (int(GRID_SIZE), zone, grid_x, grid_y)
 
         if key != lastkey:
             if geom:
-                these_dists, edges = get_nearest_edges_sub(lastkey, geom, route_p.crs, dist=2)
+                these_dists, edges = get_nearest_edges_sub(lastkey, geom, crs, dist=2)
                 dists.extend(these_dists)
             geom = []
 
@@ -295,7 +318,10 @@ def find_offroad_segments_internal(strava_activity_id):
     labels = []
     colors = []
     for p1, p2, l in segments:
-        rg.append(LineString([(x.x, x.y) for x in route_p['geometry'][p1:p2+1 if p2 > 0 else p2]]))
+        points = route_p['geometry'][p1:p2+1 if p2 > 0 else p2]
+        if len(points) < 2:
+            continue
+        rg.append(LineString([(x.x, x.y) for x in points]))
         labels.append(l)
         if l == 'on':
             colors.append('red')
@@ -307,17 +333,26 @@ def find_offroad_segments_internal(strava_activity_id):
     route_seg_p = gpd.GeoDataFrame(geometry=rg)
     route_seg_p['colors'] = colors
 
-    logger.warn("took %r", time.time() - t1)
-
     return route_seg_p
 
 
 if __name__ == '__main__':
-    import cProfile
-    import pstats
+    for x in queries.activities(type='Walk', start_datetime_after=datetime.datetime(2018, 1, 1), sort='start_datetime'):
+        if not os.path.exists('/srv/data/graphs/'):
+            os.makedirs('/srv/data/graphs')
 
-    if 'stats' in sys.argv:
-        p = pstats.Stats('mystats')
-        p.strip_dirs().sort_stats('cumulative').print_stats(25)
-    else:
-        cProfile.run('find_offroad_segments(2347770699, do_graph=True)', 'mystats')
+        dst = '/srv/data/graphs/{}.png'.format(x.strava_activity_id)
+        if os.path.exists(dst):
+            continue
+
+        logger.warn("%r - %r start -------------------------", x.strava_activity_id, x.start_datetime)
+        t1 = time.time()
+        name = find_offroad_segments(x.strava_activity_id, do_graph=True)
+        t2 = time.time()
+        if name:
+            shutil.copy(name, dst)
+
+        logger.warn("%r - %r took %0.1f -------------------------", x.strava_activity_id, x.start_datetime, t2-t1)
+        for k in sorted(counts.keys()):
+            for k2 in sorted(counts[k].keys()):
+                logger.warn("%r - %r - %r", k, k2, counts[k][k2])
