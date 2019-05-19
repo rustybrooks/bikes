@@ -70,11 +70,9 @@ def geom_loader(name, geom_key, generator):
         filename = os.path.join(dirname, key_str)
         if os.path.exists(filename):
             counts[name]['load'] += 1
-            # logger.warn("loading %r", filename)
             with open(filename, "rb") as f:
                 data = pickle.load(f)
         else:
-#            logger.warn("saving %r", filename)
             counts[name]['generate'] += 1
             data = generator()
             if not os.path.exists(dirname):
@@ -96,7 +94,6 @@ def debounce_triggers(dists, triggers_off, triggers_on):
             if last == 0:
                 pass
             else:
-                # logger.warn("segments = %r", segments)
                 if segments:
                     segments[-1][1] = t
 
@@ -225,41 +222,61 @@ def load_grid_edges(grid_x, grid_y, crs):
         return tep
     except ox.core.EmptyOverpassResponse:
         pass
-        # logger.warn("no data %r %r", x, y)
 
     return gpd.GeoDataFrame(geometry=[])
 
 
 def find_offroad_segments(strava_activity_id, do_graph=False):
-    route_seg_p = geom_loader('offroad_segments', (strava_activity_id, ), lambda: find_offroad_segments_internal(strava_activity_id))
+    segments = geom_loader('offroad_segments', (strava_activity_id, ), lambda: find_offroad_segments_internal(strava_activity_id))
 
     if do_graph:
-        data = queries.activity_streams(strava_activity_id=strava_activity_id, sort='time')[::10]
-        if not len(data):
-            return None
+        return graph_offroad_segments(strava_activity_id, segments)
 
-        route = gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
-            Point((a.long, a.lat)) for a in data
-        ])
-        west, south, east, north = route.total_bounds
-        tgp = ox.project_graph(ox.graph_from_bbox(
-            north, south, east, west,
-            truncate_by_edge=True, simplify=True, clean_periphery=False, network_type='all', retain_all=True
-        ))
-        tnp, edges_p = ox.graph_to_gdfs(tgp, nodes=True, edges=True)
 
-        with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png', delete=False) as tf:
-            name = tf.name
-            fig, ax = plt.subplots(figsize=(12, 12))
-            edges_p.plot(ax=ax, linewidth=1, edgecolor='#aaaaaa')
-            plot_linestring_collection(ax, route_seg_p['geometry'], colors=route_seg_p['colors'], linewidth=1.5, alpha=0.5)
+def graph_offroad_segments(strava_activity_id, segments):
+    data = queries.activity_streams(strava_activity_id=strava_activity_id, sort='time')
+    if not len(data):
+        return None
 
-            plt.tight_layout()
-            plt.axis('off')
-            plt.subplots_adjust(hspace=0, wspace=0, left=0, top=1, right=1, bottom=0)
-            plt.savefig(tf.name, dpi=300)
+    route = gpd.GeoDataFrame(crs={'init': 'epsg:4326'}, geometry=[
+        Point((a.long, a.lat)) for a in data
+    ])
+    west, south, east, north = route.total_bounds
+    tgp = ox.graph_from_bbox(
+        north, south, east, west,
+        truncate_by_edge=True, simplify=True, clean_periphery=False, network_type='all', retain_all=True
+    )
+    tnp, edges = ox.graph_to_gdfs(tgp, nodes=True, edges=True)
 
-        return name
+    rg = []
+    labels = []
+    colors = []
+    for p1, p2, l in segments:
+        points = route['geometry'][p1:p2 + 1 if p2 > 0 else p2]
+        if len(points) < 2:
+            continue
+        rg.append(LineString([(x.x, x.y) for x in points]))
+        labels.append(l)
+        if l == 'on':
+            colors.append('red')
+        elif l == 'off':
+            colors.append('green')
+
+    route_seg = gpd.GeoDataFrame(geometry=rg)
+    route_seg['colors'] = colors
+
+    with tempfile.NamedTemporaryFile(mode="w+b", suffix='.png', delete=False) as tf:
+        name = tf.name
+        fig, ax = plt.subplots(figsize=(12, 12))
+        edges.plot(ax=ax, linewidth=1, edgecolor='#aaaaaa')
+        plot_linestring_collection(ax, route_seg['geometry'], colors=route_seg['colors'], linewidth=1.5, alpha=0.5)
+
+        plt.tight_layout()
+        plt.axis('off')
+        plt.subplots_adjust(hspace=0, wspace=0, left=0, top=1, right=1, bottom=0)
+        plt.savefig(tf.name, dpi=300)
+
+    return name
 
 
 def find_offroad_segments_internal(strava_activity_id):
@@ -314,26 +331,7 @@ def find_offroad_segments_internal(strava_activity_id):
     triggers_off = np.flatnonzero((dists[:-1] < thresh) & (dists[1:] >= thresh))
     segments = debounce_triggers(edc, triggers_off, triggers_on)
 
-    rg = []
-    labels = []
-    colors = []
-    for p1, p2, l in segments:
-        points = route_p['geometry'][p1:p2+1 if p2 > 0 else p2]
-        if len(points) < 2:
-            continue
-        rg.append(LineString([(x.x, x.y) for x in points]))
-        labels.append(l)
-        if l == 'on':
-            colors.append('red')
-        elif l == 'off':
-            colors.append('green')
-        elif l == 'deleted':
-            colors.append('purple')
-
-    route_seg_p = gpd.GeoDataFrame(geometry=rg)
-    route_seg_p['colors'] = colors
-
-    return route_seg_p
+    return segments
 
 
 if __name__ == '__main__':
