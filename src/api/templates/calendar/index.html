@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+{% block body %}
+
+
+{#<p/>#}
+{#<br><a href="${ reverse('calendar_summary') }">Summary</a>#}
+{#<br><a href="${ reverse('graph_cumulative') }">Cumulative Hours Graph</a>#}
+{#<br><a href="${ reverse('graph_power') }">Power Graph</a>#}
+
+{#<div style="width: 600px; height: 200px;">#}
+{#${graph_script}#}
+{#</div>#}
+{#<p/>#}
+
+{% set cum_hours = 0 %}
+{% set mmf_cum_hours = 0 %}
+
+
+<table border="1" cellspacing="0" cellpadding="4">
+    <tr>
+    {% for i in range(8) %}
+        <td width='80px;'></td>
+    {% endfor %}
+    </tr>
+
+    {% for w in weeks %}
+        <tr>
+        {% for d in w %}
+            <td valign="top">
+                {{ d }}
+                {% for a in data[d].activities %}
+                    <br/>{{ '{type} {distance_mi:0.1f} {moving_time_f}'.format(**a) }}
+                {% endfor %}
+            </td>
+        {% endfor %}
+        <td>
+            {{ "{:0.1f}".format(data['{}:totals'.format(day_to_week[w[0]])]['distance_mi']) }}
+            {{ format_interval(data['{}:totals'.format(day_to_week[w[0]])]['moving_time']) }}
+        </td>
+        </tr>
+    {% endfor %}
+
+</table>
+
+{% endblock %}
