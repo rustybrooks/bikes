@@ -1,10 +1,13 @@
+import calendar
+import datetime
 from flask import Flask, render_template, redirect
 import flask_login
 import logging
 import os
+import pytz
 
 from lib import api_framework
-from lib.api_framework import api_register, Api, HttpResponse, api_int
+from lib.api_framework import api_register, Api, HttpResponse, api_int, api_datetime
 from flask_cors import CORS
 
 
@@ -13,7 +16,7 @@ if not os.path.exists(osmnx_cache_dir):
     os.makedirs(osmnx_cache_dir)
 
 
-from bikedb import queries, stravaapi, offroad
+from bikedb import queries, stravaapi, offroad, heatmap
 
 
 root = os.path.join(os.path.dirname(__file__))
@@ -93,27 +96,89 @@ class Interface(Api):
         os.unlink(fn)
         return resp
 
+    @classmethod
+    @Api.config(require_login=is_logged_in)
+    def heatmap(cls):
+        fn = heatmap.generate(
+            type='Ride', start_date=datetime.datetime(2018, 1, 1),
+        )
+        resp = HttpResponse(
+            content=open(fn, 'rb').read(),
+            content_type='image/png',
+        )
+        os.unlink(fn)
+        return resp
+
+
+def format_interval(duration):
+    return str(datetime.timedelta(seconds=duration))
+
 
 @api_register(None, require_login=is_logged_in)
 class CalendarApi(Api):
     @classmethod
-    def index(self):
-        # cal = models.Calendar(user=request.user, all=request.REQUEST.get('all', False))
-        #
-        # script = bokeh.embed.autoload_server(
-        #     model=None,
-        #     app_path="/graphs/bike_weekly_summary",
-        #     url="http://graphs-home.rustybrooks.com:5000/"
-        # )
+    def _fixdate(cls, d, tz):
+        return pytz.utc.localize(d).astimezone(tz)
 
-        context = {
-            # 'calendar': cal,
-            # 'reverse': reverse,
-            # 'urllib': urllib,
-            # 'datetime': datetime,
-            # 'graph_script': script,
-        }
-        return HttpResponse(render_template('calendar/index.html'))
+    @classmethod
+    def index(cls, date=None, week_start_day=5, timezone='US/Central', _user=None):  # monday is 0, 5 is saturday etc
+        tz = pytz.timezone(timezone)
+        date = api_datetime(date) or cls._fixdate(datetime.datetime.utcnow(), tz)
+        logger.warn("date=%r", date)
+
+        cal = calendar.Calendar(week_start_day)
+        weeks = cal.monthdatescalendar(date.year, date.month)
+        first = weeks[0][0]
+        last = weeks[-1][-1]
+
+        first = tz.localize(datetime.datetime(first.year, first.month, first.day)).astimezone(pytz.utc)
+        last = tz.localize(datetime.datetime(last.year, last.month, last.day)).astimezone(pytz.utc)
+
+        # logger.warn("%r", cal.monthdatescalendar(date.year, date.month))
+        logger.warn(
+            "first=%r, last=%r",
+            first.astimezone(pytz.utc),
+            last.astimezone(pytz.utc) + datetime.timedelta(days=1)
+        )
+
+        activities = queries.activities(
+            user_id=_user.user_id,
+            start_datetime_after=first.astimezone(pytz.utc),
+            start_datetime_before=last.astimezone(pytz.utc)+datetime.timedelta(days=1)
+        )
+        logger.warn("%r", activities[0])
+
+        data = {}
+        day_to_week = {}
+        week_index = 0
+        for w in weeks:
+            logger.warn("w = %r", w)
+            data['{}:totals'.format(week_index)] = {
+                'moving_time': 0,
+                'distance_mi': 0,
+            }
+            for d in w:
+                day_to_week[d] = week_index
+                data[d] = {
+                    'activities': []
+                }
+
+            week_index += 1
+
+        logger.warn("data keys = %r", data.keys())
+
+        for a in activities:
+            ad = cls._fixdate(a.start_datetime, tz).date()
+            # ad = a.start_datetime
+
+            logger.warn("%r - %r", ad, ad in data)
+            data[ad]['activities'].append(a)
+            data['{}:totals'.format(day_to_week[ad])]['distance_mi'] += a.distance_mi
+            data['{}:totals'.format(day_to_week[ad])]['moving_time'] += a.moving_time
+
+        return HttpResponse(render_template(
+            'calendar/index.html', weeks=weeks, data=data, day_to_week=day_to_week, format_interval=format_interval
+        ))
 
 
 api_framework.app_class_proxy(app, '', '/', Interface())

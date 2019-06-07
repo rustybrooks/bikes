@@ -785,6 +785,15 @@ def process_shapes(config, hook=None):
     return matrix
 
 
+class PointDataReader():
+    def __init__(self, data=None):
+        self.data = data
+
+    def __iter__(self):
+        for d in self.data:
+            yield Point(LatLon(d[0], d[1]))
+
+
 class FileReader():
     '''Abstract base class for file readers.'''
 
@@ -1226,6 +1235,56 @@ class Configuration(object):
         logging.info('input extent: %s' % str(self.extent_out.map(
             self.projection.inverse_project)))
         logging.info('output extent: %s' % str(self.extent_out))
+
+
+def make_heatmap(
+    verbose=False, debug=False, animate=False, data=None,
+    decay=0.95, radius=5, width=None, height=None,
+    load=None, save=None, output=None, background=None
+
+):
+    # logging.basicConfig(format='%(relativeCreated)8d ms  // %(message)s')
+    config = Configuration(use_defaults=True)
+    config.shapes = PointDataReader(data)
+    config.decay = decay
+    config.radius = radius
+    config.width = width
+    config.height = height
+    config.background = background
+
+    if verbose:
+        logging.getLogger().setLevel(logging.INFO)
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    if load:
+        logging.info('loading data')
+        matrix = pickle.load(open(load, 'rb'))
+        config, matrix['config'].argparser = matrix['config'], config.argparser
+        del matrix['config']
+        # config.set_from_options(args)
+        config.fill_missing()
+    else:
+        # config.set_from_options(args)
+        config.fill_missing()
+        if animate:
+            animator = ImageSeriesMaker(config)
+            matrix = animator.run()
+        else:
+            matrix = process_shapes(config)
+            matrix = matrix.finalized()
+
+    if output and not animate:
+        image = ImageMaker(config).make_image(matrix)
+        image.save(output)
+
+    if save:
+        logging.info('saving data')
+        matrix['config'] = config
+        del config.argparser   # can't pickle an ArgumentParser
+        pickle.dump(matrix, open(save, 'wb'), 2)
+
+    logging.info('end')
 
 
 def main():

@@ -20,8 +20,7 @@ basedir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.abspath(os.path.join(basedir, '..')))
 
 from lib.database.sql import Migration
-from bikedb import queries, migrations
-
+from bikedb import queries, migrations, stravaapi
 
 if __name__ == '__main__':
     parser = optparse.OptionParser()
@@ -39,14 +38,10 @@ if __name__ == '__main__':
     while True:
         t1 = time.time()
         logger.warning("Starting sync")
-        # if options.sync:
-        #     if options.from_cache:
-        #         sync_players.sync_from_disk(load_assets=options.load_assets, pubg_match_id=options.pubg_match_id)
-        #     else:
-        #         try:
-        #             sync_players.sync(load_assets=options.load_assets, pubg_match_id=options.pubg_match_id)
-        #         except Exception:
-        #             logger.error("Exception while syncing: %r", traceback.format_exc())
+
+        for u in [queries.User(user_id=x.user_id) for x in queries.users()]:
+            logger.warning("Syncing user %r", u)
+            stravaapi.activities_sync_many(u, days_ago=1/24.)
 
         if options.continuous < 0:
             break

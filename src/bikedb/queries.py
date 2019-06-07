@@ -115,14 +115,19 @@ def delete_user(username=None, email=None):
     SQL.delete('users', where, bindvars)
 
 
+def users():
+    query = "select * from users"
+    return list(SQL.select_foreach(query))
+
 ##############################################################
 # activities
 
 def activities(
-    strava_activity_id=None, type=None, type_in=None, start_datetime_before=None, start_datetime_after=None,
+    strava_activity_id=None, type=None, type_in=None,
+    start_datetime_before=None, start_datetime_after=None, user_id=None,
     page=None, limit=None, sort=None,
 ):
-    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id, type=type)
+    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id, type=type, user_id=user_id)
 
     if start_datetime_after:
         where += ["start_datetime >= :sda"]
@@ -144,7 +149,10 @@ def activities(
         where += 'type in ({})'.format(','.join([x for x in tv]))
 
     query = """
-        select * from strava_activities 
+        select *, 
+        distance/1609.34 as distance_mi, 
+        TO_CHAR((moving_time || ' second')::interval, 'HH24:MI:SS') as moving_time_f
+        from strava_activities 
         {where}
         {sort} {limit}
     """.format(
@@ -254,10 +262,35 @@ def add_activity_segment_effort_ach(data):
 ##############################################################
 # activity_streams
 
-def activity_streams(strava_activity_id=None, page=None, limit=None, sort=None):
-    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id)
+def activity_streams(
+    strava_activity_id=None, type=None, type_in=None, start_datetime_before=None, start_datetime_after=None,
+    page=None, limit=None, sort=None
+):
+    where, bindvars = SQL.auto_where(strava_activity_id=strava_activity_id, type=type)
+
+    if start_datetime_after:
+        where += ["start_datetime >= :sda"]
+        bindvars['sda'] = start_datetime_after
+
+    if start_datetime_before:
+        where += ["start_datetime <= :sdb"]
+        bindvars['sdb'] = start_datetime_before
+
+    if type_in:
+        n = 0
+        tv = []
+        for el in type_in:
+            v = 'type_{}'.format(n)
+            bindvars[v] = el
+            tv.append(':{}'.format(v))
+            n += 1
+
+        where += 'type in ({})'.format(','.join([x for x in tv]))
+
     query = """
-        select * from strava_activity_streams 
+        select * 
+        from strava_activities
+        join strava_activity_streams using (strava_activity_id) 
         {where}
         {sort} {limit}
     """.format(

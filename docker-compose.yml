@@ -24,24 +24,24 @@ services:
       - ENVIRONMENT=dev
       - DATA_ROOT=/srv/data
 
-#  bikes-bikedb:
-#    build:
-#      context: ./src/
-#      dockerfile: bikedb/Dockerfile
-#    image: bikes-bikedb:latest
-#    container_name: bikes-bikedb
-#    volumes:
-#      - ./data/:/srv/data
-#      - ./src/:/srv/src
-#    links:
-#      - postgres:local-bikes-postgres.aveng.us
-#    environment:
-#      - ENVIRONMENT=dev
-#      - DATA_ROOT=/srv/data
-#      - FLASK_STORAGE=0
-#
-#    ports:
-#        - 3306:3306
+  bikes-bikedb:
+    build:
+      context: ./src/
+      dockerfile: bikedb/Dockerfile
+    image: bikes-bikedb:latest
+    container_name: bikes-bikedb
+    volumes:
+      - ./data/:/srv/data
+      - ./src/:/srv/src
+    links:
+      - postgres:local-bikes-postgres.aveng.us
+    environment:
+      - ENVIRONMENT=dev
+      - DATA_ROOT=/srv/data
+      - FLASK_STORAGE=0
+
+    ports:
+        - 3306:3306
 
     #  bikes-buildui:
 #    build:
