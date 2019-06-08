@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
         for u in [queries.User(user_id=x.user_id) for x in queries.users()]:
             logger.warning("Syncing user %r", u)
-            stravaapi.activities_sync_many(u, days_ago=1/24.)
+            stravaapi.activities_sync_many(u, days_ago=1)
 
         if options.continuous < 0:
             break
