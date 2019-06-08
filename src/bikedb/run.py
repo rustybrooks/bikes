@@ -5,14 +5,9 @@
 
 import optparse
 import logging
-import multiprocessing
 import os
 import sys
 import time
-import traceback
-
-logging.basicConfig(level=logging.WARN, format="[%(levelname)s %(asctime)s %(module)s.%(funcName)s] %(message)s")
-logger = logging.getLogger(__name__)
 
 os.environ['FLASK_STORAGE'] = '0'
 
@@ -20,7 +15,10 @@ basedir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.abspath(os.path.join(basedir, '..')))
 
 from lib.database.sql import Migration
-from bikedb import queries, migrations, stravaapi
+from bikedb import queries, stravaapi
+
+logging.basicConfig(level=logging.WARN, format="[%(levelname)s %(asctime)s %(module)s.%(funcName)s] %(message)s")
+logger = logging.getLogger(__name__)
 
 if __name__ == '__main__':
     parser = optparse.OptionParser()
@@ -43,10 +41,11 @@ if __name__ == '__main__':
             logger.warning("Syncing user %r", u)
             stravaapi.activities_sync_many(u, days_ago=1)
 
+        logger.warning("Done sync")
+
         if options.continuous < 0:
             break
 
         left = max(0, options.continuous - (time.time()-t1))
         time.sleep(left)
 
-        logger.warning("Done sync")

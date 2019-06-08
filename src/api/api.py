@@ -124,7 +124,7 @@ class CalendarApi(Api):
     def index(cls, date=None, week_start_day=5, timezone='US/Central', _user=None):  # monday is 0, 5 is saturday etc
         tz = pytz.timezone(timezone)
         date = api_datetime(date) or cls._fixdate(datetime.datetime.utcnow(), tz)
-        logger.warn("date=%r", date)
+        logger.warning("date=%r", date)
 
         cal = calendar.Calendar(week_start_day)
         weeks = cal.monthdatescalendar(date.year, date.month)
@@ -134,8 +134,8 @@ class CalendarApi(Api):
         first = tz.localize(datetime.datetime(first.year, first.month, first.day)).astimezone(pytz.utc)
         last = tz.localize(datetime.datetime(last.year, last.month, last.day)).astimezone(pytz.utc)
 
-        # logger.warn("%r", cal.monthdatescalendar(date.year, date.month))
-        logger.warn(
+        # logger.warning("%r", cal.monthdatescalendar(date.year, date.month))
+        logger.warning(
             "first=%r, last=%r",
             first.astimezone(pytz.utc),
             last.astimezone(pytz.utc) + datetime.timedelta(days=1)
@@ -146,13 +146,13 @@ class CalendarApi(Api):
             start_datetime_after=first.astimezone(pytz.utc),
             start_datetime_before=last.astimezone(pytz.utc)+datetime.timedelta(days=1)
         )
-        logger.warn("%r", activities[0])
+        logger.warning("%r", activities[0])
 
         data = {}
         day_to_week = {}
         week_index = 0
         for w in weeks:
-            logger.warn("w = %r", w)
+            logger.warning("w = %r", w)
             data['{}:totals'.format(week_index)] = {
                 'moving_time': 0,
                 'distance_mi': 0,
@@ -165,13 +165,13 @@ class CalendarApi(Api):
 
             week_index += 1
 
-        logger.warn("data keys = %r", data.keys())
+        logger.warning("data keys = %r", data.keys())
 
         for a in activities:
             ad = cls._fixdate(a.start_datetime, tz).date()
             # ad = a.start_datetime
 
-            logger.warn("%r - %r", ad, ad in data)
+            logger.warning("%r - %r", ad, ad in data)
             data[ad]['activities'].append(a)
             data['{}:totals'.format(day_to_week[ad])]['distance_mi'] += a.distance_mi
             data['{}:totals'.format(day_to_week[ad])]['moving_time'] += a.moving_time
