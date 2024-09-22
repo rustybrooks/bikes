@@ -1,0 +1,88 @@
+name: On Merge Main
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_test-backend:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS credentials (webapi)
+        uses: aws-actions/configure-aws-credentials@v4 # More information on this action can be found below in the 'AWS Credentials' section
+        with:
+          role-to-assume: arn:aws:iam::408799413549:role/github-actions-bikes-api
+          aws-region: us-west-2
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: lint and test
+        run: |
+          ./.github/workflows/scripts/build-test-deploy.sh test
+
+      - name: build and publish (webapi)
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: bikes
+          AWS_REGION: us-west-2
+          ECS_CLUSTER: rustybrooks-backend-prod
+          ENV: prod
+        run: |
+          export IMAGE_TAG="$(date +%Y-%m-%d)-$(echo ${{github.sha}} | cut -c1-8)"
+          SERVICE_NAME=bikes-api TASK_FAMILY=rustybrooks-backend-prod-bikes-api ./.github/workflows/scripts/build-test-deploy.sh deploy
+
+      - name: Configure AWS credentials (playerdb)
+        uses: aws-actions/configure-aws-credentials@v4 # More information on this action can be found below in the 'AWS Credentials' section
+        with:
+          role-to-assume: arn:aws:iam::408799413549:role/github-actions-bikes-db
+          aws-region: us-west-2
+
+      - name: build and publish (playerdb)
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: bikes
+          AWS_REGION: us-west-2
+          ECS_CLUSTER: rustybrooks-backend-prod
+          ENV: prod
+        run: |
+          export IMAGE_TAG="$(date +%Y-%m-%d)-$(echo ${{github.sha}} | cut -c1-8)"
+          SERVICE_NAME=bikes-db TASK_FAMILY=rustybrooks-backend-prod-bikes-db ./.github/workflows/scripts/build-test-deploy.sh update
+
+#  build_and_test-ui:
+#    name: Build and Test
+#    runs-on: ubuntu-latest
+#    permissions:
+#      id-token: write
+#      contents: read
+#
+#    steps:
+#      - name: Check out the repo
+#        uses: actions/checkout@v4
+#
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v4 # More information on this action can be found below in the 'AWS Credentials' section
+#        with:
+#          role-to-assume: arn:aws:iam::408799413549:role/github-actions-bikes-ui
+#          aws-region: us-west-2
+#
+#      - name: build and publish
+#        run: |
+#          cd src/ui/app
+#          yarn install --frozen-lockfile
+#          yarn build
+#          aws s3 sync --delete --quiet dist/ s3://bikes-ui/prod/
+#          aws cloudfront create-invalidation --distribution-id E2FN07MF5Y5JDB --paths "/*"

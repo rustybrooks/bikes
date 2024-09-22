@@ -15,7 +15,7 @@ basedir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.abspath(os.path.join(basedir, '..')))
 
 from lib.database.sql import Migration
-from bikedb import queries, stravaapi
+from bikedb import queries, migrations
 
 logging.basicConfig(level=logging.WARN, format="[%(levelname)s %(asctime)s %(module)s.%(funcName)s] %(message)s")
 logger = logging.getLogger(__name__)

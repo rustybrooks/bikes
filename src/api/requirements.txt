@@ -2,7 +2,7 @@ bson
 bcrypt
 python-dateutil
 pytz
-sqlalchemy
+sqlalchemy==1.4
 flask
 gevent
 gunicorn

@@ -33,7 +33,7 @@ def SQLFactory(sql_url=None, flask_storage=False):
 
 
 if config.get_config_key('ENVIRONMENT') == 'dev':
-    sql_url = "postgresql://wombat:1wombat2@local-bikes-postgres.aveng.us:5432/bikes"
+    sql_url = "postgresql://wombat:1wombat2@postgres:5432/bikes"
 else:
     sql_url = 'postgresql://flannelcat:{}@flannelcat-postgres.cwrbtizazqua.us-west-2.rds.amazonaws.com:5432/bike'.format(
         config.get_config_key('DB_PASSWORD')

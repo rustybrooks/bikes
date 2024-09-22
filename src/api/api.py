@@ -10,13 +10,13 @@ from lib import api_framework
 from lib.api_framework import api_register, Api, HttpResponse, api_int, api_datetime
 from flask_cors import CORS
 
+from bikedb import queries, stravaapi, offroad, heatmap
 
 osmnx_cache_dir = '/srv/data/osmnx_cache'
 if not os.path.exists(osmnx_cache_dir):
     os.makedirs(osmnx_cache_dir)
 
 
-from bikedb import queries, stravaapi, offroad, heatmap
 
 
 root = os.path.join(os.path.dirname(__file__))

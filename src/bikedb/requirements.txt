@@ -1,6 +1,5 @@
 bcrypt
 python-dateutil
 pytz
-sqlalchemy
-# pyMysql
+sqlalchemy==1.4
 psycopg2-binary

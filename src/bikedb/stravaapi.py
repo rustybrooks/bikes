@@ -1,14 +1,15 @@
 import datetime
 import logging
-import numpy
 import os
-import pytz
-import requests
 import time
 import urllib.parse
 
-from . import queries
+import numpy
+import pytz
+import requests
+
 from lib import config
+from bikedb import queries
 
 logger = logging.getLogger(__name__)
 

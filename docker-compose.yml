@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 
 services:
 #  bikes-base:
@@ -10,38 +10,42 @@ services:
   bikes-api:
     build:
       context: ./src/
-      dockerfile: api/Dockerfile
+      dockerfile: Dockerfile
     image: bikes-api:latest
     container_name: bikes-api
-    links:
-      - postgres:local-bikes-postgres.aveng.us
     ports:
-      - 5000:5000
+      - "5000:5000"
     volumes:
       - ./data/:/srv/data
       - ./src/:/srv/src/
     environment:
       - ENVIRONMENT=dev
       - DATA_ROOT=/srv/data
+    entrypoint: /srv/src/api/entrypoint.sh
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   bikes-bikedb:
     build:
       context: ./src/
-      dockerfile: bikedb/Dockerfile
-    image: bikes-bikedb:latest
+      dockerfile: Dockerfile
+    image: bikes-api:latest
     container_name: bikes-bikedb
     volumes:
       - ./data/:/srv/data
       - ./src/:/srv/src
-    links:
-      - postgres:local-bikes-postgres.aveng.us
     environment:
       - ENVIRONMENT=dev
       - DATA_ROOT=/srv/data
       - FLASK_STORAGE=0
-
+    entrypoint: /srv/src/bikedb/entrypoint.sh
     ports:
-        - 3306:3306
+        - "3306:3306"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 
     #  bikes-buildui:
 #    build:
@@ -69,3 +73,9 @@ services:
       - ./data/postgres:/var/lib/postgresql/data/pgdata
     ports:
       - 5432:5432
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U wombat -d bikes" ]
+      interval: 1s
+      timeout: 5s
+      retries: 3
+    stop_grace_period: 2m
