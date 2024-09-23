@@ -1,4 +1,4 @@
-import bson
+# import bson
 from collections import defaultdict
 import copy
 import datetime
@@ -51,8 +51,8 @@ class OurJSONEncoder(json.JSONEncoder):
             return obj.to_json()
         elif isinstance(obj, datetime.datetime):
             return obj.isoformat()
-        elif isinstance(obj, bson.ObjectId):
-            return str(obj)
+        #elif isinstance(obj, bson.ObjectId):
+         #   return str(obj)
         elif isinstance(obj, decimal.Decimal):
             return float(obj)
 
