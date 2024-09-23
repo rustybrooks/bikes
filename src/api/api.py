@@ -35,6 +35,10 @@ login_manager.init_app(app)
 def is_logged_in(request, api_data, url_data):
     return flask_login.current_user
 
+@app.route('/health/')
+def health():
+    return 'so healthy'
+
 
 @login_manager.user_loader
 def load_user(user_id):
