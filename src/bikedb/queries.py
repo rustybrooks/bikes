@@ -1,9 +1,9 @@
-import bcrypt
 import logging
 import os
 
-from lib.database.sql import SQLBase, dictobj, chunked
-from lib import config
+import bcrypt
+
+from lib.database.sql import SQLBase
 
 # filterwarnings('ignore', category = pymysql.Warning)
 
