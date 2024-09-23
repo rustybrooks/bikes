@@ -530,7 +530,7 @@ def speed_curve_process(activity_id, delete=False):
 #            logger.warning("Adding point %r", (activity_id_, interval_length, val)
         s = dictobj()
         s.interval_length = win
-        s.speed = val
+        s.speed = float(val)
         s.strava_activity_id = activity_id
         curves.append(s.asdict())
 
