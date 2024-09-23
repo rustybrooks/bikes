@@ -34,7 +34,7 @@ jobs:
         run: |
           ./.github/workflows/scripts/build-test-deploy.sh test
 
-      - name: build and publish (webapi)
+      - name: build and publish (api)
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: bikes
@@ -51,7 +51,7 @@ jobs:
           role-to-assume: arn:aws:iam::408799413549:role/github-actions-bikes-db
           aws-region: us-west-2
 
-      - name: build and publish (playerdb)
+      - name: build and publish (db)
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: bikes

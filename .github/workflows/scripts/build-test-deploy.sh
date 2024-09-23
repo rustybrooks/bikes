@@ -30,7 +30,6 @@ if [ "$1" = "deploy" ]; then
       --tag "${REPOSITORY}:${IMAGE_TAG}" \
       --platform "${PLATFORM}" \
       --load \
-      --quiet \
       "${SCRIPT_DIR}/../../../src/"
 
   docker tag "${REPOSITORY}:${IMAGE_TAG}" "$REGISTRY/${REPOSITORY}:${IMAGE_TAG}"
