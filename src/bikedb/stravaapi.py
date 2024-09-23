@@ -474,7 +474,7 @@ def power_curve_process(activity_id, delete=False):
 
         p = dictobj()
         p.interval_length = win
-        p.watts = val
+        p.watts = float(val)
         p.strava_activity_id = activity_id
         curves.append(p.asdict())
 
