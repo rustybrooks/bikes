@@ -11,7 +11,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import osmnx as ox
+# import osmnx as ox
 import pandas as pd
 import pickle
 from shapely.geometry import Point, LineString
@@ -37,10 +37,10 @@ if not os.path.exists(osmnx_cache_dir):
 geom_mem_cache = {}
 
 
-ox.utils.config(
-    cache_folder=osmnx_cache_dir,
-    use_cache=True,
-)
+# ox.utils.config(
+#     cache_folder=osmnx_cache_dir,
+#     use_cache=True,
+# )
 
 root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(root)

@@ -9,3 +9,5 @@ gunicorn
 psycopg2-binary
 flask-cors
 flask-login
+requests
+shapely

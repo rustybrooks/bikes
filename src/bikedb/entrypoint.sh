@@ -7,4 +7,5 @@ sleep 15
 
 while true; do
     ./bikedb/run.py --sync --continuous=300
+    sleep 10
 done

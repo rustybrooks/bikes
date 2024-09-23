@@ -23,6 +23,9 @@ services:
       - DATA_ROOT=/srv/data
       - CLIENT_ID=${CLIENT_ID:-9981}
       - CLIENT_SECRET=${CLIENT_SECRET}
+      - DB_HOST=localhost
+      - DB_USER=wombat
+      - DB_PASSWORD=1wombat2
     entrypoint: /srv/src/api/entrypoint.sh
     depends_on:
       postgres:
@@ -41,6 +44,9 @@ services:
       - ENVIRONMENT=dev
       - DATA_ROOT=/srv/data
       - FLASK_STORAGE=0
+      - DB_HOST=postgres
+      - DB_USER=wombat
+      - DB_PASSWORD=1wombat2
     entrypoint: /srv/src/bikedb/entrypoint.sh
     ports:
         - "3306:3306"

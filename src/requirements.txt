@@ -1,6 +1,6 @@
 # geopandas
 rtree
-osmnx
+# osmnx
 matplotlib
 pillow
 geopy

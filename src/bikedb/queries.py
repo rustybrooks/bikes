@@ -18,7 +18,7 @@ isolation_level = 'REPEATABLE READ'
 def SQLFactory(sql_url=None, flask_storage=False):
     global _SQL
     if _SQL is None:
-        logger.warning("Initializing SQL: %r, flask_storage=%r", sql_url, flask_storage)
+        logger.warning("Initializing SQL: flask_storage=%r", flask_storage)
         _SQL = SQLBase(
             sql_url,
             isolation_level=isolation_level,
@@ -27,18 +27,12 @@ def SQLFactory(sql_url=None, flask_storage=False):
             flask_storage=flask_storage,
 
         )
-        logger.warning("Done Initializing SQL: %r, flask_storage=%r", sql_url, flask_storage)
+        logger.warning("Done Initializing SQL: flask_storage=%r", flask_storage)
 
     return _SQL
 
 
-if config.get_config_key('ENVIRONMENT') == 'dev':
-    sql_url = "postgresql://wombat:1wombat2@postgres:5432/bikes"
-else:
-    sql_url = 'postgresql://flannelcat:{}@flannelcat-postgres.cwrbtizazqua.us-west-2.rds.amazonaws.com:5432/bike'.format(
-        config.get_config_key('DB_PASSWORD')
-    )
-
+sql_url = f'postgresql://{os.getenv("DB_USER")}:{os.getenv("DB_PASSWORD")}@{os.getenv("DB_HOST")}:5432/bikes'
 SQL = SQLFactory(sql_url, flask_storage=os.environ.get('FLASK_STORAGE', "0'") != "0")
 
 
