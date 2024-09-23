@@ -11,12 +11,30 @@ import requests
 from bikedb import queries
 from lib import config
 from lib.database.sql import dictobj
+from requests.adapters import HTTPAdapter
+from urllib3.util import Retry
 
 logger = logging.getLogger(__name__)
 
 
 client_id = config.get_config_key('CLIENT_ID')
 client_secret = config.get_config_key('CLIENT_SECRET')
+
+
+# Define the retry strategy
+retry_strategy = Retry(
+    total=10,  # Maximum number of retries
+    backoff_factor=30,
+    status_forcelist=[429],  # HTTP status codes to retry on
+    backoff_max=5*60,
+)
+# Create an HTTP adapter with the retry strategy and mount it to session
+adapter = HTTPAdapter(max_retries=retry_strategy)
+
+# Create a new session object
+session = requests.Session()
+session.mount('http://', adapter)
+session.mount('https://', adapter)
 
 
 class NoAuthCode(Exception):
@@ -104,7 +122,6 @@ def refresh_token(user):
     )
 
     data = response.json()
-    logger.warning("refresh data = %r", data)
     queries.update_user(
         user_id=user.user_id,
         access_token=data['access_token'],
@@ -129,7 +146,7 @@ def strava_fetch(user, url, **kwargs):
     full_url = url + url_args
     headers = {'api-key': str(client_id), 'authorization': 'Bearer %s' % get_auth_code(user)}
     # logger.warning("fetch url=%r, headers=%r", full_url, headers)
-    response = requests.get(url=full_url, verify=True, headers=headers)
+    response = session.get(url=full_url, verify=True, headers=headers)
     ourjson = response.json()
 
     if isinstance(ourjson, dict) and 'errors' in ourjson:
@@ -219,8 +236,6 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
         act.strava_activity_id = activity_id
         act.user_id = user.user_id
 
-    logger.warning("Syncing activity %r - 2", activity_id)
-
     for key in [
         'external_id', 'upload_id', 'distance', 'moving_time',
         'elapsed_time', 'total_elevation_gain', 'type', 'timezone',
@@ -245,25 +260,16 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
     act['end_lat'] = activity['end_latlng'][0] if activity['end_latlng'] else None
     act['end_long'] = activity['end_latlng'][1] if activity['end_latlng'] else None
 
-    logger.warning("Syncing activity %r - 3", activity_id)
-
     if new:
-        logger.warning("Syncing activity %r - add", activity_id)
         queries.add_activity(act)
     else:
-        logger.warning("Syncing activity %r - update", activity_id)
         queries.update_activity(strava_activity_id=activity_id)
-
-
-    logger.warning("Syncing activity %r - 4", activity_id)
 
     if 'segment_efforts' in activity:
         for e in activity.get('segment_efforts', []):
             activity_segment_effort_sync_one(act, e)
 
     activity_stream_sync(user, act)
-
-    logger.warning("Syncing activity %r - 5", activity_id)
 
     return act
 
@@ -352,8 +358,6 @@ def activity_stream_sync(user, activity, force=False):
 
     queries.delete_activity_streams(strava_activity_id=activity.strava_activity_id)
 
-    logger.warning("Syncing activity stream id=%r 2", activity.strava_activity_id)
-
     stream_data = get_activity_stream(user, activity.strava_activity_id)
     if not stream_data:
         return
@@ -363,8 +367,6 @@ def activity_stream_sync(user, activity, force=False):
     for stream in stream_data:
         types.append(stream['type'])
         datas.append(stream['data'])
-
-    logger.warning("Syncing activity stream id=%r 3", activity.strava_activity_id)
 
     to_insert = []
     for datum in zip(*datas):
@@ -379,14 +381,10 @@ def activity_stream_sync(user, activity, force=False):
 
         to_insert.append(s.asdict())
 
-    logger.warning("Syncing activity stream id=%r 4", activity.strava_activity_id)
     queries.add_activity_streams(to_insert)
-
-    logger.warning("Syncing activity stream id=%r 5", activity.strava_activity_id)
 
     power_curve_process(activity.strava_activity_id)
 
-    logger.warning("Syncing activity stream id=%r 6", activity.strava_activity_id)
     speed_curve_process(activity.strava_activity_id)
     logger.warning("Done with %r - took %0.2f", activity.strava_activity_id, time.time()-t1)
 
