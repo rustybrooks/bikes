@@ -219,6 +219,8 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
         act.strava_activity_id = activity_id
         act.user_id = user.user_id
 
+    logger.warning("Syncing activity %r - 2", activity_id)
+
     for key in [
         'external_id', 'upload_id', 'distance', 'moving_time',
         'elapsed_time', 'total_elevation_gain', 'type', 'timezone',
@@ -243,16 +245,25 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
     act['end_lat'] = activity['end_latlng'][0] if activity['end_latlng'] else None
     act['end_long'] = activity['end_latlng'][1] if activity['end_latlng'] else None
 
+    logger.warning("Syncing activity %r - 3", activity_id)
+
     if new:
+        logger.warning("Syncing activity %r - add", activity_id)
         queries.add_activity(act)
     else:
+        logger.warning("Syncing activity %r - update", activity_id)
         queries.update_activity(strava_activity_id=activity_id)
+
+
+    logger.warning("Syncing activity %r - 4", activity_id)
 
     if 'segment_efforts' in activity:
         for e in activity.get('segment_efforts', []):
             activity_segment_effort_sync_one(act, e)
 
     activity_stream_sync(user, act)
+
+    logger.warning("Syncing activity %r - 5", activity_id)
 
     return act
 
