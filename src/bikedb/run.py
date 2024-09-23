@@ -27,6 +27,7 @@ if __name__ == '__main__':
     parser.add_option('-s', '--sync', action='store_true', default=False, help='Perform sync on startup')
     parser.add_option('-i', '--initial', action='store_true', default=False, help="Whether to do a full migration from initial state")
     parser.add_option('-a', '--apply', type=str, default=None, help="Migration version to manually apply")
+    parser.add_option("-d", "--days", type=int, default=1, help="How many days back to look for activities to sync")
     options, args = parser.parse_args()
 
     if options.migrate:
@@ -43,7 +44,7 @@ if __name__ == '__main__':
                     continue
 
                 logger.warning("Syncing user %r", u)
-                stravaapi.activities_sync_many(u, days_ago=1)
+                stravaapi.activities_sync_many(u, days_ago=options.days)
 
             logger.warning("Done sync")
 
