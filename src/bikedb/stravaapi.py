@@ -8,8 +8,9 @@ import numpy
 import pytz
 import requests
 
-from lib import config
 from bikedb import queries
+from lib import config
+from lib.database.sql import dictobj
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +215,7 @@ def activities_sync_one(user, activity, full=False, rebuild=False):
 
     new = not bool(act)
     if not act:
-        act = queries.dictobj()
+        act = dictobj()
         act.strava_activity_id = activity_id
         act.user_id = user.user_id
 
@@ -271,7 +272,7 @@ def activity_segment_effort_sync_one(activity, segment):
     new = not bool(sege)
 
     if not sege:
-        sege = queries.dictobj()
+        sege = dictobj()
         sege.strava_segment_id = segment_id
 
     sege.strava_activity_id = activity.strava_activity_id
