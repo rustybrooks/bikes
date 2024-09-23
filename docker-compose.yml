@@ -21,6 +21,8 @@ services:
     environment:
       - ENVIRONMENT=dev
       - DATA_ROOT=/srv/data
+      - CLIENT_ID=${CLIENT_ID:-9981}
+      - CLIENT_SECRET=${CLIENT_SECRET}
     entrypoint: /srv/src/api/entrypoint.sh
     depends_on:
       postgres:

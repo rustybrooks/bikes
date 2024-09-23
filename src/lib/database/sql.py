@@ -419,8 +419,8 @@ class SQLConn(object):
             return dictobj(result.items()) if result is not None else None
 
     def insert(self, table_name, data, ignore_duplicates=False, batch_size=200, returning=True):
-        # if isinstance(data, dictobj):
-        #     data = data.asdict()
+        if isinstance(data, dictobj):
+            data = data.asdict()
 
         def _ignore_pre():
             if self.sql.mysql:

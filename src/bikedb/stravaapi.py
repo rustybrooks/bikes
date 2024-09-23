@@ -30,11 +30,11 @@ class StravaError(Exception):
         self.code = code
 
     def __str__(self):
-        return "StravaError(message=%r, errors=%r, code=%r)"
+        return f"StravaError(message={self.message}, errors={self.errors}, code={self.code})"
 
 
 def get_auth_code(user):
-    if user.expires_at <= datetime.datetime.utcnow():
+    if user.expires_at and user.expires_at <= datetime.datetime.utcnow():
         logger.warning("expires at %r now = %r", user.expires_at, datetime.datetime.utcnow())
         user.access_token = refresh_token(user)
 
@@ -45,7 +45,7 @@ def redirect_token(return_to_url='/'):
     if os.getenv('ENVIRONMENT', "dev") == "dev":
         redirect_uri = 'http://localhost:5000/strava_callback'
     else:
-        redirect_uri = "http://bike.rustybrooks.com/strava_callback"
+        redirect_uri = "https://bike.rustybrooks.com/strava_callback"
 
     authorize_url = 'https://www.strava.com/oauth/authorize'
     authorize_url += "?"
@@ -73,6 +73,8 @@ def get_token(user, code):
         data=access_token_data,
         headers={'Api-Key': str(client_id)}
     )
+
+    logger.error("id=%r secret=%r response %r", client_id, client_secret, response.content)
 
     data = response.json()
     queries.update_user(

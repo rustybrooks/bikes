@@ -6,5 +6,5 @@ sleep 15
 ./bikedb/run.py --migrate
 
 while true; do
-    ./bikedb/run.py --sync --continuous=30 
+    ./bikedb/run.py --sync --continuous=300
 done

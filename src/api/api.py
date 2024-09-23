@@ -16,9 +16,6 @@ osmnx_cache_dir = '/srv/data/osmnx_cache'
 if not os.path.exists(osmnx_cache_dir):
     os.makedirs(osmnx_cache_dir)
 
-
-
-
 root = os.path.join(os.path.dirname(__file__))
 
 logger = logging.getLogger(__name__)
@@ -30,7 +27,6 @@ app = Flask(
 CORS(app)
 
 app.secret_key = '60c5c072f919967af78b7acdc352ce34328d36df2a06e970d2d7ec905aa349df'
-
 
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
@@ -54,14 +50,31 @@ class Interface(Api):
     @classmethod
     @Api.config(require_login=False)
     def login(cls, username=None, password=None):
-        if username and password:
-            user = queries.User(username=username, password=password)
-            if user.is_authenticated:
-                flask_login.login_user(user)
-            else:
-                return HttpResponse(render_template('login.html'))
+        if not username or not password:
+            return HttpResponse(render_template('login.html'))
+
+        user = queries.User(username=username, password=password)
+        if user.is_authenticated:
+            flask_login.login_user(user)
         else:
             return HttpResponse(render_template('login.html'))
+
+    @classmethod
+    @Api.config(require_login=False)
+    def signup(cls, username=None, password=None, password2=None):
+        if not username or not password:
+            return HttpResponse(render_template('signup.html'))
+
+        if password != password2:
+            raise Api.BadRequest("Passwords don't match")
+
+        if len(password) < 8:
+            raise Api.BadRequest("Password must be at least 8 characters")
+
+        queries.add_user(username=username, password=password)
+
+        # code to validate and add user to database goes here
+        return redirect("/login")
 
     @classmethod
     def strava_connect(cls):
@@ -144,7 +157,7 @@ class CalendarApi(Api):
         activities = queries.activities(
             user_id=_user.user_id,
             start_datetime_after=first.astimezone(pytz.utc),
-            start_datetime_before=last.astimezone(pytz.utc)+datetime.timedelta(days=1)
+            start_datetime_before=last.astimezone(pytz.utc) + datetime.timedelta(days=1)
         )
         logger.warning("%r", activities[0])
 
@@ -184,11 +197,10 @@ class CalendarApi(Api):
 api_framework.app_class_proxy(app, '', '/', Interface())
 api_framework.app_class_proxy(app, '', '/calendar', CalendarApi())
 
-
 codes = [400, 406, 404]
 
 for code in codes:
     app.register_error_handler(code, lambda e: e.get_response())
 
-#if os.getenv('ENVIRONMENT') != 'prod':
+# if os.getenv('ENVIRONMENT') != 'prod':
 #    app.register_error_handler(500, lambda e: str(e))
