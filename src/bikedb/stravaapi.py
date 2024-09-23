@@ -306,7 +306,7 @@ def segment_sync_one(segment):
     seg = queries.segment(strava_segment_id=segment_id)
     new = not bool(seg)
     if not seg:
-        seg = queries.dictobj()
+        seg = dictobj()
         seg.strava_segment_id = segment_id
 
     for key in [
@@ -352,7 +352,7 @@ def activity_stream_sync(user, activity, force=False):
 
     to_insert = []
     for datum in zip(*datas):
-        s = queries.dictobj()
+        s = dictobj()
         s.strava_activity_id = activity.strava_activity_id
         for t, d in zip(types, datum):
             if t == 'latlng':
@@ -378,7 +378,7 @@ def activity_segment_effort_ach_sync(segment_effort, achievements):
         strava_activity_segment_effort_id=segment_effort.strava_activity_segment_effort_id
     )
     for ach in achievements:
-        a = queries.dictobj()
+        a = dictobj()
         a.strava_activity_segment_effort_id = segment_effort.strava_activity_segment_effort_id
         a.type_id = ach['type_id']
         a.type = ach['type']
@@ -451,7 +451,7 @@ def power_curve_process(activity_id, delete=False):
         if val == 0:
             continue
 
-        p = queries.dictobj()
+        p = dictobj()
         p.interval_length = win
         p.watts = val
         p.strava_activity_id = activity_id
@@ -528,7 +528,7 @@ def speed_curve_process(activity_id, delete=False):
             continue
 
 #            logger.warning("Adding point %r", (activity_id_, interval_length, val)
-        s = queries.dictobj()
+        s = dictobj()
         s.interval_length = win
         s.speed = val
         s.strava_activity_id = activity_id
