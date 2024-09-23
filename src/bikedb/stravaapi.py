@@ -104,7 +104,7 @@ def refresh_token(user):
     )
 
     data = response.json()
-    logger.warn("refresh data = %r", data)
+    logger.warning("refresh data = %r", data)
     queries.update_user(
         user_id=user.user_id,
         access_token=data['access_token'],
@@ -347,7 +347,7 @@ def activity_stream_sync(user, activity, force=False):
     logger.warning("Syncing activity stream id=%r", activity.strava_activity_id)
     current = queries.activity_streams(strava_activity_id=activity.strava_activity_id)
     if len(current) and not force:
-        logger.warn("not len current and not force %r %r", len(current), force)
+        logger.warning("not len current and not force %r %r", len(current), force)
         return
 
     queries.delete_activity_streams(strava_activity_id=activity.strava_activity_id)
@@ -388,7 +388,7 @@ def activity_stream_sync(user, activity, force=False):
 
     logger.warning("Syncing activity stream id=%r 6", activity.strava_activity_id)
     speed_curve_process(activity.strava_activity_id)
-    logger.warn("Done with %r - took %0.2f", activity.strava_activity_id, time.time()-t1)
+    logger.warning("Done with %r - took %0.2f", activity.strava_activity_id, time.time()-t1)
 
 
 def activity_segment_effort_ach_sync(segment_effort, achievements):

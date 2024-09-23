@@ -7,6 +7,7 @@ preload_app = True
 # worker_class = 'gevent'
 worker_class = 'gthread'
 threads = 4
+timeout = 200
 
 # max_requests = 10000
 # max_requests_jitter = int(max_requests / 2)
