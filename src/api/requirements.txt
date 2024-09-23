@@ -6,12 +6,6 @@ sqlalchemy==1.4
 flask
 gevent
 gunicorn
-#appenlight-client 
-#blinker
 psycopg2-binary
-#geojson
-# numpy
-# heatmap
-# pillow
 flask-cors
 flask-login

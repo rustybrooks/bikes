@@ -4,8 +4,8 @@ import matplotlib
 matplotlib.use('Agg')
 
 import datetime
-import geopandas as gpd
-from geopandas.plotting import plot_polygon_collection, plot_linestring_collection
+# import geopandas as gpd
+# from geopandas.plotting import plot_polygon_collection, plot_linestring_collection
 import logging
 import math
 import matplotlib.pyplot as plt

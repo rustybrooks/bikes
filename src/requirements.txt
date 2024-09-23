@@ -1,4 +1,4 @@
-geopandas
+# geopandas
 rtree
 osmnx
 matplotlib
