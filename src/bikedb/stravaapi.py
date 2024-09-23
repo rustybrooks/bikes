@@ -347,9 +347,12 @@ def activity_stream_sync(user, activity, force=False):
     logger.warning("Syncing activity stream id=%r", activity.strava_activity_id)
     current = queries.activity_streams(strava_activity_id=activity.strava_activity_id)
     if len(current) and not force:
+        logger.warn("not len current and not force %r %r", len(current), force)
         return
 
     queries.delete_activity_streams(strava_activity_id=activity.strava_activity_id)
+
+    logger.warning("Syncing activity stream id=%r 2", activity.strava_activity_id)
 
     stream_data = get_activity_stream(user, activity.strava_activity_id)
     if not stream_data:
@@ -360,6 +363,8 @@ def activity_stream_sync(user, activity, force=False):
     for stream in stream_data:
         types.append(stream['type'])
         datas.append(stream['data'])
+
+    logger.warning("Syncing activity stream id=%r 3", activity.strava_activity_id)
 
     to_insert = []
     for datum in zip(*datas):
@@ -374,9 +379,14 @@ def activity_stream_sync(user, activity, force=False):
 
         to_insert.append(s.asdict())
 
+    logger.warning("Syncing activity stream id=%r 4", activity.strava_activity_id)
     queries.add_activity_streams(to_insert)
 
+    logger.warning("Syncing activity stream id=%r 5", activity.strava_activity_id)
+
     power_curve_process(activity.strava_activity_id)
+
+    logger.warning("Syncing activity stream id=%r 6", activity.strava_activity_id)
     speed_curve_process(activity.strava_activity_id)
     logger.warn("Done with %r - took %0.2f", activity.strava_activity_id, time.time()-t1)
 
