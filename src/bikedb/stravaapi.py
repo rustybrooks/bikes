@@ -11,8 +11,8 @@ import requests
 from bikedb import queries
 from lib import config
 from lib.database.sql import dictobj
-from requests.adapters import HTTPAdapter
-from urllib3.util import Retry
+# from requests.adapters import HTTPAdapter
+# from urllib3.util import Retry
 
 logger = logging.getLogger(__name__)
 
@@ -21,20 +21,20 @@ client_id = config.get_config_key('CLIENT_ID')
 client_secret = config.get_config_key('CLIENT_SECRET')
 
 
-# Define the retry strategy
-retry_strategy = Retry(
-    total=10,  # Maximum number of retries
-    backoff_factor=30,
-    status_forcelist=[429],  # HTTP status codes to retry on
-    backoff_max=5*60,
-)
-# Create an HTTP adapter with the retry strategy and mount it to session
-adapter = HTTPAdapter(max_retries=retry_strategy)
-
-# Create a new session object
-session = requests.Session()
-session.mount('http://', adapter)
-session.mount('https://', adapter)
+# # Define the retry strategy
+# retry_strategy = Retry(
+#     total=10,  # Maximum number of retries
+#     backoff_factor=30,
+#     status_forcelist=[429],  # HTTP status codes to retry on
+#     backoff_max=5*60,
+# )
+# # Create an HTTP adapter with the retry strategy and mount it to session
+# adapter = HTTPAdapter(max_retries=retry_strategy)
+#
+# # Create a new session object
+# session = requests.Session()
+# session.mount('http://', adapter)
+# session.mount('https://', adapter)
 
 
 class NoAuthCode(Exception):
@@ -51,6 +51,24 @@ class StravaError(Exception):
     def __str__(self):
         return f"StravaError(message={self.message}, errors={self.errors}, code={self.code})"
 
+
+def retry_request(url, total=5, status_forcelist=None, **kwargs):
+    status_forcelist = status_forcelist or [429]
+    # Make number of requests required
+    for i in range(total):
+        try:
+            response = requests.get(url, **kwargs)
+            if response.status_code in status_forcelist:
+                # Retry request
+                sleeptime = 30 * 2**i
+                logger.info("Sleeping %r for url %r (i=%r)", sleeptime, url, i)
+                time.sleep(sleeptime)
+                continue
+            return response
+        except requests.exceptions.ConnectionError:
+            pass
+
+    return None
 
 def get_auth_code(user):
     if user.expires_at and user.expires_at <= datetime.datetime.utcnow():
@@ -92,8 +110,6 @@ def get_token(user, code):
         data=access_token_data,
         headers={'Api-Key': str(client_id)}
     )
-
-    logger.error("id=%r secret=%r response %r", client_id, client_secret, response.content)
 
     data = response.json()
     queries.update_user(
@@ -146,7 +162,7 @@ def strava_fetch(user, url, **kwargs):
     full_url = url + url_args
     headers = {'api-key': str(client_id), 'authorization': 'Bearer %s' % get_auth_code(user)}
     # logger.warning("fetch url=%r, headers=%r", full_url, headers)
-    response = session.get(url=full_url, verify=True, headers=headers)
+    response = retry_request(url=full_url, verify=True, headers=headers)
     ourjson = response.json()
 
     if isinstance(ourjson, dict) and 'errors' in ourjson:
