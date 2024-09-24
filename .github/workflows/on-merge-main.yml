@@ -81,7 +81,7 @@ jobs:
 
       - name: build and publish
         run: |
-          cd src/ui/app
+          cd src/ui
           yarn install --frozen-lockfile
           yarn build
           aws s3 sync --delete --quiet dist/ s3://bikes-ui/prod/
