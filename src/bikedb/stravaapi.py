@@ -63,7 +63,7 @@ def retry_request(url, max_seconds=300, status_forcelist=None, **kwargs):
             if response.status_code in status_forcelist:
                 # Retry request
                 sleeptime = min(sleeptime + 60, 300)
-                logger.info("Sleeping %r for url %r (i=%r)", sleeptime, url, i)
+                logger.info("Sleeping %r for url %r (total=%r)", sleeptime, url, time.time() - start_time)
                 time.sleep(sleeptime)
                 continue
             return response
