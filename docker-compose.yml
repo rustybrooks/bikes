@@ -1,20 +1,16 @@
-version: '3'
+version: '3.8'
 
 services:
-#  bikes-base:
-#    build:
-#      context: ./src/
-#      dockerfile: Dockerfile
-#    image: bikes-base:latest
 
-  bikes-api:
+
+  api:
     build:
       context: ./src/
       dockerfile: Dockerfile
     image: bikes-api:latest
-    container_name: bikes-api
+    container_name: api
     ports:
-      - "5000:5000"
+      - "3000:5000"
     volumes:
       - ./data/:/srv/data
       - ./src/:/srv/src/
@@ -31,12 +27,12 @@ services:
       postgres:
         condition: service_healthy
 
-  bikes-bikedb:
+  bikedb:
     build:
       context: ./src/
       dockerfile: Dockerfile
     image: bikes-api:latest
-    container_name: bikes-bikedb
+    container_name: bikedb
     volumes:
       - ./data/:/srv/data
       - ./src/:/srv/src
@@ -50,29 +46,26 @@ services:
       - DB_USER=wombat
       - DB_PASSWORD=1wombat2
     entrypoint: /srv/src/bikedb/entrypoint.sh
-    ports:
-        - "3306:3306"
     depends_on:
       postgres:
         condition: service_healthy
 
-
-    #  bikes-buildui:
-#    build:
-#      context: ./src/
-#      dockerfile: ui/Dockerfile
-#    image: bikes-ui:latest
-#    container_name: bikes-buildui
-#    volumes:
-#      - ./data/:/srv/data
-#      - ./src/:/srv/src
-#    environment:
-#      - ENVIRONMENT=dev
-#    ports:
-#        - 3000:3000
+  ui:
+    build:
+      context: ./src/ui
+      dockerfile: Dockerfile
+    image: bikes-ui:latest
+    container_name: ui
+    volumes:
+      - ./src/ui/src:/srv/src/ui/src
+      - ./src/ui/public:/srv/src/ui/public
+    environment:
+      - ENVIRONMENT=dev
+    ports:
+        - "5000:5000"
 
   postgres:
-    image: postgres:10.6
+    image: postgres:16
     restart: always
     environment:
       - POSTGRES_DB=bikes

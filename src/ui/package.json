@@ -1,0 +1,47 @@
+{
+  "name": "app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5000",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "types": "tsc -b",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mantine/charts": "^7.12.1",
+    "@mantine/core": "^7.12.1",
+    "@mantine/hooks": "^7.12.1",
+    "@mantine/modals": "^7.12.1",
+    "@mantine/notifications": "^7.12.2",
+    "@tabler/icons-react": "^3.12.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router": "^6.26.1",
+    "react-router-dom": "^6.26.1",
+    "recharts": "^2.10.3"
+  },
+  "devDependencies": {
+    "@rustybrooks/eslint-config-prettier": "^1.0.18",
+    "@eslint/js": "^9.9.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react-swc": "^3.5.0",
+    "eslint": "^9.9.0",
+    "eslint-plugin-react-hooks": "^5.1.0-rc.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "globals": "^15.9.0",
+    "postcss": "^8.4.41",
+    "postcss-preset-mantine": "^1.17.0",
+    "postcss-simple-vars": "^7.0.1",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.0.1",
+    "vite": "^5.4.1",
+    "vite-plugin-svgr": "^4.2.0"
+  },
+  "resolutions": {
+    "rollup": "npm:@rollup/wasm-node"
+  }
+}

@@ -62,27 +62,27 @@ jobs:
           export IMAGE_TAG="$(date +%Y-%m-%d)-$(echo ${{github.sha}} | cut -c1-8)"
           SERVICE_NAME=bikes-db TASK_FAMILY=rustybrooks-backend-prod-bikes-db ./.github/workflows/scripts/build-test-deploy.sh update
 
-#  build_and_test-ui:
-#    name: Build and Test
-#    runs-on: ubuntu-latest
-#    permissions:
-#      id-token: write
-#      contents: read
-#
-#    steps:
-#      - name: Check out the repo
-#        uses: actions/checkout@v4
-#
-#      - name: Configure AWS credentials
-#        uses: aws-actions/configure-aws-credentials@v4 # More information on this action can be found below in the 'AWS Credentials' section
-#        with:
-#          role-to-assume: arn:aws:iam::408799413549:role/github-actions-bikes-ui
-#          aws-region: us-west-2
-#
-#      - name: build and publish
-#        run: |
-#          cd src/ui/app
-#          yarn install --frozen-lockfile
-#          yarn build
-#          aws s3 sync --delete --quiet dist/ s3://bikes-ui/prod/
-#          aws cloudfront create-invalidation --distribution-id E2FN07MF5Y5JDB --paths "/*"
+  build_and_test-ui:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4 # More information on this action can be found below in the 'AWS Credentials' section
+        with:
+          role-to-assume: arn:aws:iam::408799413549:role/github-actions-bikes-ui
+          aws-region: us-west-2
+
+      - name: build and publish
+        run: |
+          cd src/ui/app
+          yarn install --frozen-lockfile
+          yarn build
+          aws s3 sync --delete --quiet dist/ s3://bikes-ui/prod/
+          aws cloudfront create-invalidation --distribution-id E2FN07MF5Y5JDB --paths "/*"

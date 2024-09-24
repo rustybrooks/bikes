@@ -52,15 +52,17 @@ class StravaError(Exception):
         return f"StravaError(message={self.message}, errors={self.errors}, code={self.code})"
 
 
-def retry_request(url, total=5, status_forcelist=None, **kwargs):
+def retry_request(url, max_seconds=300, status_forcelist=None, **kwargs):
     status_forcelist = status_forcelist or [429]
     # Make number of requests required
-    for i in range(total):
+    start_time = time.time()
+    sleeptime = 60
+    while time.time() - start_time < max_seconds:
         try:
             response = requests.get(url, **kwargs)
             if response.status_code in status_forcelist:
                 # Retry request
-                sleeptime = 30 * 2**i
+                sleeptime = min(sleeptime + 60, 300)
                 logger.info("Sleeping %r for url %r (i=%r)", sleeptime, url, i)
                 time.sleep(sleeptime)
                 continue
@@ -162,7 +164,7 @@ def strava_fetch(user, url, **kwargs):
     full_url = url + url_args
     headers = {'api-key': str(client_id), 'authorization': 'Bearer %s' % get_auth_code(user)}
     # logger.warning("fetch url=%r, headers=%r", full_url, headers)
-    response = retry_request(url=full_url, verify=True, headers=headers)
+    response = retry_request(url=full_url, verify=True, headers=headers, max_seconds=60*60*24)
     ourjson = response.json()
 
     if isinstance(ourjson, dict) and 'errors' in ourjson:

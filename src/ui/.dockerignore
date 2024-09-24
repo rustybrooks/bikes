@@ -1,0 +1,13 @@
+*
+!src
+!public
+!package.json
+!yarn.lock
+!vite.config.ts
+!tsconfig.json
+!tsconfig.node.json
+!tsconfig.app.json
+!index.html
+!entrypoint.sh
+!postcss.config.cjs
+!.yarnrc.yml
