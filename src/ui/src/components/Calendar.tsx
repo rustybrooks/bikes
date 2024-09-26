@@ -13,7 +13,7 @@ const formatSecondsTime = (sec: number): string => {
   return date.toISOString().substring(11, 19);
 };
 
-const actIcon = type => {
+const actIcon = (type: string) => {
   switch (type) {
     case 'Ride':
       return <IconBike stroke={1.5} size="1rem" className={classes.icon} />;
@@ -64,12 +64,12 @@ export const Calendar = () => {
                 <Text className={classes.date}>{date.split('-')[2]}</Text>
               </Card.Section>
               <Stack>
-                {(calendar[date].activities || []).map(act => {
+                {(calendar[date].activities || []).map((act: any) => {
                   return (
                     <Card withBorder={true} key={act.id} padding="xs">
                       <Card.Section>
                         <Box className={classes.exerciseheader}>
-                          <Group gap="xs" justify="space-between" className={classes.exercisename} size="sm">
+                          <Group gap="xs" justify="space-between" className={classes.exercisename}>
                             <Box w="7rem" component="span">
                               <Text size="sm" truncate="end">
                                 {act.activity_name}&nbsp;
