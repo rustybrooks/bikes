@@ -6,3 +6,7 @@ pillow
 geopy
 scikit-learn
 mapclassify
+https://github.com/rustybrooks/pylibs/blob/main/builds/api_framework-0.0.2-py3-none-any.whl?raw=true
+https://github.com/rustybrooks/pylibs/blob/main/builds/sqllib-0.0.2-py3-none-any.whl?raw=true
+https://github.com/rustybrooks/pylibs/blob/main/builds/cachelib-0.0.2-py3-none-any.whl?raw=true
+https://github.com/rustybrooks/pylibs/blob/main/builds/configlib-0.0.1-py3-none-any.whl?raw=true

@@ -3,7 +3,7 @@ import os
 
 import bcrypt
 
-from lib.database.sql import SQLBase
+from sqllib.sql import SQLBase
 
 # filterwarnings('ignore', category = pymysql.Warning)
 
@@ -27,7 +27,9 @@ def SQLFactory(sql_url=None, flask_storage=False):
             flask_storage=flask_storage,
 
         )
-        logger.warning("Done Initializing SQL: flask_storage=%r", flask_storage)
+        logger.warning("Done Initializing SQL: flask_storage=%r mysql=%r", flask_storage, _SQL.mysql)
+        _SQL.mysql = False
+        _SQL.postgres = True
 
     return _SQL
 
@@ -52,7 +54,7 @@ class User(object):
         }
 
     def __init__(self, user_id=None, username=None, email=None, password=None, is_authenticated=False):
-        self.is_authenticated = is_authenticated
+        self._is_authenticated = is_authenticated
         self.is_active = False
         self.is_anonymous = False
         self.user_id = 0
@@ -74,9 +76,12 @@ class User(object):
         genpass = self.generate_password_hash(password, salt)
         ourpass = bytes(self.password.encode('utf-8'))
         logger.warning("%r salt=%r, ourpass=%r, genpass=%r", password, salt, ourpass, genpass)
-        self.is_authenticated = ourpass and (genpass == ourpass)
-        self.is_active = self.is_authenticated
-        return self.is_authenticated
+        self._is_authenticated = ourpass and (genpass == ourpass)
+        self.is_active = self._is_authenticated
+        return self._is_authenticated
+
+    def is_authenticated(self):
+        return self._is_authenticated
 
     @classmethod
     def generate_password_hash(cls, password, salt):
@@ -166,7 +171,7 @@ def activity(strava_activity_id=None):
 
 
 def add_activity(data):
-    return SQL.insert('strava_activities', data)
+    return SQL.insert('strava_activities', dict(data)) # FIXME
 
 
 def update_activity(strava_activity_id=None, data=None):
@@ -196,7 +201,7 @@ def segment(strava_segment_id=None):
 
 
 def add_segment(data):
-    SQL.insert('strava_segments', data)
+    SQL.insert('strava_segments', dict(data))
 
 
 def update_segment(strava_segment_id=None, data=None):
@@ -226,7 +231,7 @@ def activity_segment_effort(strava_segment_id=None, strava_activity_segment_effo
 
 
 def add_activity_segment_effort(data):
-    return SQL.insert('strava_activity_segment_efforts', data)
+    return SQL.insert('strava_activity_segment_efforts', dict(data))
 
 
 def update_activity_segment_effort(strava_activity_segment_effort_id=None, data=None):
@@ -250,7 +255,7 @@ def delete_activity_segment_effort_achs(strava_activity_segment_effort_id=None, 
 
 
 def add_activity_segment_effort_ach(data):
-    return SQL.insert('strava_activity_segment_effort_achs', data)
+    return SQL.insert('strava_activity_segment_effort_achs', dict(data))
 
 
 ##############################################################

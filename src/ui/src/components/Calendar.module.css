@@ -1,0 +1,33 @@
+.header {
+    padding: 1px;
+    background: #cfcfcf;
+}
+
+.day {
+    height: 100%;
+    min-height: 8rem;
+}
+
+.date {
+    text-align: right;
+}
+
+.icon {
+    color: white;
+}
+
+.iconbox {
+}
+
+.exerciseheader {
+    color: white;
+    background: #aa5570;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+.exercisename {
+}
+
+.exerciseact {
+}

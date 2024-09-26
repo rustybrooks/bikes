@@ -3,7 +3,7 @@
 import logging
 from warnings import filterwarnings
 
-from lib.database.sql import Migration
+from sqllib.sql import Migration
 
 logger = logging.getLogger(__name__)
 filterwarnings('ignore', message='Invalid utf8mb4 character string')

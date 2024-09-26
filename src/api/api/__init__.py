@@ -1,16 +1,17 @@
-import calendar
 import datetime
-from flask import Flask, render_template, redirect
-import flask_login
 import logging
 import os
-import pytz
 
-from lib import api_framework
-from lib.api_framework import api_register, Api, HttpResponse, api_int, api_datetime
-from flask_cors import CORS
+import api_framework  # type: ignore
+import flask_login  # type: ignore
+from api_framework import Api, api_int, api_register, HttpResponse
+from flask import Flask, redirect, render_template
+from flask_cors import CORS  # type: ignore
 
-from bikedb import queries, stravaapi, offroad, heatmap
+from api.api.calendar_api import Calendar, CalendarTemplateApi  # type: ignore
+from api.api.users_api import Users
+from api.api.utils import is_logged_in
+from bikedb import heatmap, offroad, queries, stravaapi  # type: ignore
 
 osmnx_cache_dir = '/srv/data/osmnx_cache'
 if not os.path.exists(osmnx_cache_dir):
@@ -24,16 +25,14 @@ app = Flask(
     template_folder=os.path.join(root, 'templates'),
     static_folder=os.path.join(root, 'static')
 )
-CORS(app)
+CORS(app, origins=["http://localhost:5000", "http://localhost:3000", "bikes.rustybrooks.com"],
+     supports_credentials=True, max_age=24 * 60 * 60)
 
 app.secret_key = '60c5c072f919967af78b7acdc352ce34328d36df2a06e970d2d7ec905aa349df'
 
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
 
-
-def is_logged_in(request, api_data, url_data):
-    return flask_login.current_user
 
 @app.route('/health/')
 def health():
@@ -58,7 +57,7 @@ class Interface(Api):
             return HttpResponse(render_template('login.html'))
 
         user = queries.User(username=username, password=password)
-        if user.is_authenticated:
+        if user.is_authenticated():
             flask_login.login_user(user)
         else:
             return HttpResponse(render_template('login.html'))
@@ -84,13 +83,17 @@ class Interface(Api):
     def strava_connect(cls):
         authorize_url = stravaapi.redirect_token()
         r = redirect(authorize_url)
-        return HttpResponse(content=r.response, status=r.status, content_type=r.content_type, headers=r.headers)
+        hr = HttpResponse(content=r.response, status=r.status, content_type=r.content_type)
+        hr.headers = r.headers
+        return hr
 
     @classmethod
     def strava_callback(cls, code=None, state=None, _user=None):
         stravaapi.get_token(_user, code)
         r = redirect(state)
-        return HttpResponse(content=r.response, status=r.status, content_type=r.content_type, headers=r.headers)
+        hr = HttpResponse(content=r.response, status=r.status, content_type=r.content_type)
+        hr.headers = r.headers
+        return hr
 
     @classmethod
     def strava_refresh(cls, _user=None):
@@ -127,79 +130,14 @@ class Interface(Api):
         return resp
 
 
-def format_interval(duration):
-    return str(datetime.timedelta(seconds=duration))
-
-
-@api_register(None, require_login=is_logged_in)
-class CalendarApi(Api):
-    @classmethod
-    def _fixdate(cls, d, tz):
-        return pytz.utc.localize(d).astimezone(tz)
-
-    @classmethod
-    def index(cls, date=None, week_start_day=5, timezone='US/Central', _user=None):  # monday is 0, 5 is saturday etc
-        tz = pytz.timezone(timezone)
-        date = api_datetime(date) or cls._fixdate(datetime.datetime.utcnow(), tz)
-        logger.warning("date=%r", date)
-
-        cal = calendar.Calendar(week_start_day)
-        weeks = cal.monthdatescalendar(date.year, date.month)
-        first = weeks[0][0]
-        last = weeks[-1][-1]
-
-        first = tz.localize(datetime.datetime(first.year, first.month, first.day)).astimezone(pytz.utc)
-        last = tz.localize(datetime.datetime(last.year, last.month, last.day)).astimezone(pytz.utc)
-
-        # logger.warning("%r", cal.monthdatescalendar(date.year, date.month))
-        logger.warning(
-            "first=%r, last=%r",
-            first.astimezone(pytz.utc),
-            last.astimezone(pytz.utc) + datetime.timedelta(days=1)
-        )
-
-        activities = queries.activities(
-            user_id=_user.user_id,
-            start_datetime_after=first.astimezone(pytz.utc),
-            start_datetime_before=last.astimezone(pytz.utc) + datetime.timedelta(days=1)
-        )
-        logger.warning("%r", activities[0])
-
-        data = {}
-        day_to_week = {}
-        week_index = 0
-        for w in weeks:
-            logger.warning("w = %r", w)
-            data['{}:totals'.format(week_index)] = {
-                'moving_time': 0,
-                'distance_mi': 0,
-            }
-            for d in w:
-                day_to_week[d] = week_index
-                data[d] = {
-                    'activities': []
-                }
-
-            week_index += 1
-
-        logger.warning("data keys = %r", data.keys())
-
-        for a in activities:
-            ad = cls._fixdate(a.start_datetime, tz).date()
-            # ad = a.start_datetime
-
-            logger.warning("%r - %r", ad, ad in data)
-            data[ad]['activities'].append(a)
-            data['{}:totals'.format(day_to_week[ad])]['distance_mi'] += a.distance_mi
-            data['{}:totals'.format(day_to_week[ad])]['moving_time'] += a.moving_time
-
-        return HttpResponse(render_template(
-            'calendar/index.html', weeks=weeks, data=data, day_to_week=day_to_week, format_interval=format_interval
-        ))
-
-
 api_framework.app_class_proxy(app, '', '/', Interface())
-api_framework.app_class_proxy(app, '', '/calendar', CalendarApi())
+api_framework.app_class_proxy(app, '', '/calendar', CalendarTemplateApi())
+api_framework.app_class_proxy(app, '', '/api/calendar', Calendar())
+api_framework.app_class_proxy(app, '', '/api/users', Users())
+
+api_framework.app_class_proxy(
+    app, "", "api/framework", api_framework.FrameworkApi()
+)
 
 codes = [400, 406, 404]
 

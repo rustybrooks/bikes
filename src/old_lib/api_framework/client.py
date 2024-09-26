@@ -216,17 +216,3 @@ def factory(framework, privileged_key=None, headers=None):
     )
 
 
-# a simple test
-if __name__ == '__main__':
-    frameworks = factory('osmal-ci')
-
-    print(frameworks.list_apis())
-    print(frameworks.list())
-    print(frameworks.OsmalApi.list_functions())
-
-    print(frameworks.OsmalApi.hashes(hashes=[
-        '04c1416ea184f09a24c601ff1a09a4a4a5ee5fd2228cb504c8bbb15879eaa6ea',
-        '7ffe5dfbc6cacb25b205d97fa953cd6b',  # good hash
-        '9593137ded7e944e10edd3b75a344bea58c4819f318e90bc8fe29f450aaca8e3',  # dne
-        'foo'  # bad hash
-    ]))

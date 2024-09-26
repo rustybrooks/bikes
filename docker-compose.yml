@@ -1,8 +1,6 @@
 version: '3.8'
 
 services:
-
-
   api:
     build:
       context: ./src/
@@ -19,7 +17,7 @@ services:
       - DATA_ROOT=/srv/data
       - CLIENT_ID=${CLIENT_ID:-9981}
       - CLIENT_SECRET=${CLIENT_SECRET}
-      - DB_HOST=localhost
+      - DB_HOST=postgres
       - DB_USER=wombat
       - DB_PASSWORD=1wombat2
     entrypoint: /srv/src/api/entrypoint.sh
@@ -79,6 +77,6 @@ services:
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U wombat -d bikes" ]
       interval: 1s
-      timeout: 5s
+      timeout: 15s
       retries: 3
     stop_grace_period: 2m

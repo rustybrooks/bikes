@@ -14,7 +14,7 @@ os.environ['FLASK_STORAGE'] = '0'
 basedir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.abspath(os.path.join(basedir, '..')))
 
-from lib.database.sql import Migration
+from sqllib.sql import Migration
 from bikedb import queries, migrations, stravaapi
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s %(asctime)s %(module)s.%(funcName)s] %(message)s")

@@ -9,16 +9,15 @@ import pytz
 import requests
 
 from bikedb import queries
-from lib import config
-from lib.database.sql import dictobj
+from sqllib.sql import dictobj
 # from requests.adapters import HTTPAdapter
 # from urllib3.util import Retry
 
 logger = logging.getLogger(__name__)
 
 
-client_id = config.get_config_key('CLIENT_ID')
-client_secret = config.get_config_key('CLIENT_SECRET')
+client_id = os.getenv('CLIENT_ID')
+client_secret = os.getenv('CLIENT_SECRET')
 
 
 # # Define the retry strategy
@@ -63,7 +62,7 @@ def retry_request(url, max_seconds=300, status_forcelist=None, **kwargs):
             if response.status_code in status_forcelist:
                 # Retry request
                 sleeptime = min(sleeptime + 60, 300)
-                logger.info("Sleeping %r for url %r (total=%r)", sleeptime, url, time.time() - start_time)
+                logger.info("Sleeping %r for url %r (total=%0.1f)", sleeptime, url, time.time() - start_time)
                 time.sleep(sleeptime)
                 continue
             return response
