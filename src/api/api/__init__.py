@@ -25,7 +25,7 @@ app = Flask(
     template_folder=os.path.join(root, 'templates'),
     static_folder=os.path.join(root, 'static')
 )
-CORS(app, origins=["http://localhost:5000", "http://localhost:3000", "bikes.rustybrooks.com"],
+CORS(app, origins=["http://localhost:5000", "http://localhost:3000", "https://bikes.rustybrooks.com", "https://bikes.rustybrooks.net"],
      supports_credentials=True, max_age=24 * 60 * 60)
 
 app.secret_key = '60c5c072f919967af78b7acdc352ce34328d36df2a06e970d2d7ec905aa349df'
