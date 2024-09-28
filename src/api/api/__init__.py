@@ -2,16 +2,16 @@ import datetime
 import logging
 import os
 
-import api_framework  # type: ignore
+import api_framework # type: ignore
 import flask_login  # type: ignore
 from api_framework import Api, api_int, api_register, HttpResponse
 from flask import Flask, redirect, render_template
 from flask_cors import CORS  # type: ignore
 
-from api.api.calendar_api import Calendar, CalendarTemplateApi  # type: ignore
+from api.api.calendar_api import Calendar, CalendarTemplateApi
 from api.api.users_api import Users
 from api.api.utils import is_logged_in
-from bikedb import heatmap, offroad, queries, stravaapi  # type: ignore
+from bikedb import heatmap, offroad, queries, stravaapi
 
 osmnx_cache_dir = '/srv/data/osmnx_cache'
 if not os.path.exists(osmnx_cache_dir):
