@@ -1,0 +1,62 @@
+<%inherit file="base.html" />
+
+<%block name="header"></%block>
+
+<p>
+<b>Rank History</b>
+
+<table border="1" cellspacing="0">
+    <tr>
+        <th>Date</th>
+        <th>Rank</th>
+        <th>Entries</th>
+        <th>Avg HR</th>
+        <th>Avg PWR</th>
+        <th>Distance</th>
+        <th>Elapsed</th>
+        <th>Moving</th>
+    </tr>
+
+    % for h in history:
+    <tr>
+        <td>${h.recorded_datetime.strftime("%Y-%m-%d")}</td>
+        <td>${h.rank}</td>
+        <td>${h.entries}</td>
+        <td>${h.average_hr}</td>
+        <td>${h.average_watts}</td>
+        <td>${h.distance}</td>
+        <td>${h.elapsed_time}</td>
+        <td>${h.moving_time}</td>
+    </tr>
+    %endfor
+
+</table>
+
+
+<p>
+<b>Effort History (${len(efforts)})</b>
+<table border="1" cellspacing="0">
+    <tr>
+        <th>Date</th>
+        <th>Elapsed</th>
+        <th>Moving</th>
+        <th>Cadence</th>
+        <th>HR</th>
+        <th>PWR</th>
+        <th>Rank</th>
+        <th>PR Rank</th>
+    </tr>
+
+ % for e in efforts:
+    <tr>
+        <td>${e.start_datetime_local.strftime("%Y-%m-%d")}</td>
+        <td>${e.elapsed_time}</td>
+        <td>${e.moving_time}</td>
+        <td>${e.average_cadence}</td>
+        <td>${e.average_heartrate}</td>
+        <td>${'*' if e.device_watts else ''}${e.average_watts}</td>
+        <td>${e.kom_rank if e.kom_rank else ''}</td>
+        <td>${e.pr_rank if e.pr_rank else ''}</td>
+    </tr>
+% endfor
+</table>

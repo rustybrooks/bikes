@@ -1,0 +1,69 @@
+<%inherit file="base.html" />
+
+<%block name="header"></%block>
+
+<div style="width: 1000px; height: 800px;">
+${analysis_script}
+</div>
+
+<p>
+Has streams: ${'Yes' if len(streams) else 'No'}<br>
+Has power curve: ${'Yes' if len(power_curve) else 'No'}<br>
+Has speed curve: ${'Yes' if len(speed_curve) else 'No'}<br>
+
+
+<p>
+<a href="${reverse('activity_update', kwargs={'activity_id': activity.activity_id})}">Update</a><br>
+<a href="${reverse('activity_update_curves', kwargs={'activity_id': activity.activity_id})}">Update Curves</a><br>
+
+<p>
+<table border="1" cellpadding="2" cellspacing="0">
+    <tr>
+        <td>Distance</td><td>${"%0.2f" % miles(activity.distance)}</td>
+        <td>Moving Time</td><td>${activity.moving_time_formatted()}</td>
+        <td>Elevation</td><td>${int(activity.total_elevation_gain_feet())}</td>
+        <td>Suffer Score</td><td>${activity.suffer_score}</td>
+    </tr>
+    <tr>
+        <td>Weighted Power</td><td>${int(activity.weighted_average_watts)}</td>
+        <td>Total Work</td><td>${int(activity.kilojoules)}</td>
+        <td>Training Load</td><td></td>
+        <td>Intensity</td><td></td>
+    </tr>
+</table>
+
+<p>
+<table border="1" cellpadding="2" cellspacing="0">
+    <tr>
+        <td></td><td>Avg</td><td>Max</td>
+    </tr><tr>
+        <td>Speed</td>    <td>${"%0.1f" % mph(activity.average_speed)}</td><td>${"%0.1f" % mph(activity.max_speed)}</td>
+    </tr><tr>
+        <td>Heartrate</td><td>${activity.average_heartrate}</td><td>${activity.max_heartrate}</td>
+    </tr><tr>
+        <td>Cadence</td>  <td>${activity.average_cadence}</td>
+    ##<td>${activity.max_cadence}</td>
+    </tr><tr>
+        <td>Power</td>    <td>${activity.average_watts}</td><td>${activity.max_watts}</td>
+    </tr>
+</table>
+
+<p>
+<table border="1" cellspacing="0" cellpadding="2">
+    <tr>
+        <td>Name</td><td>Time</td><td>Power</td><td>HR</td>
+    </tr>
+
+    % for e in efforts:
+    <tr>
+        <td><a href="${reverse('segment', kwargs={'segment_id': e.segment.segment_id})}">${e.name}</a></td>
+        <td>${e.moving_time}</td>
+        <td>${e.average_watts}</td>
+        <td>${e.average_heartrate}</td>
+    </tr>
+    % endfor
+</table>
+
+<div style="width: 1000px; height: 800px;">
+${curve_script}
+</div>
