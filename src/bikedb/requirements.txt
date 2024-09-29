@@ -1,5 +1,2 @@
-bcrypt
-python-dateutil
-pytz
-sqlalchemy==1.4
-psycopg2-binary
+
+

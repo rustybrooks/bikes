@@ -1,0 +1,9 @@
+django-stubs[compatible-mypy]~=5.0.2
+django-stubs-ext~=5.0.0
+factory-boy~=3.3.0
+coverage~=7.5.1
+mypy~=1.10.0
+ruff~=0.4.4
+types-requests
+openapi-python-client
+drf-yasg-stubs~=0.1.4

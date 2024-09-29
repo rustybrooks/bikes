@@ -2,12 +2,14 @@ import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router';
-import { AppShell, createTheme, MantineProvider } from '@mantine/core';
+import { AppShell, createTheme, MantineProvider, rem } from '@mantine/core';
 import { fetchFrameworks } from './framework_client';
 import { BASE_URL } from './constants/api';
-import { Home } from './components/Home';
 import { FrameworkContext, FrameworkContextType } from './contexts/FrameworkContext';
 import { Header } from './components/Header';
+import { NavBar } from './components/NavBar';
+import { TrainingPlans } from './views/TrainingPlans';
+import { Calendar } from './views/Calendar';
 
 const theme = createTheme({
   //
@@ -171,14 +173,27 @@ export const App = () => {
   return (
     <MantineProvider defaultColorScheme="auto" theme={theme}>
       <FrameworkContext.Provider value={frameworks}>
-        <AppShell withBorder={false} padding="md" header={{ height: '50px', offset: true }}>
+        <AppShell
+          withBorder={false}
+          padding="md"
+          header={{ height: '50px', offset: true }}
+          footer={{ height: 0 }}
+          navbar={{
+            width: rem('80px'),
+            breakpoint: 'sm',
+          }}
+        >
           <AppShell.Header>
             <Header />
           </AppShell.Header>
+          <AppShell.Navbar p="md">
+            <NavBar />
+          </AppShell.Navbar>
           <AppShell.Main>
             <div>
               <Routes>
-                <Route path="/" element={<Home />} />
+                <Route path="/" element={<Calendar />} />
+                <Route path="/training" element={<TrainingPlans />} />
                 <Route element={<NoMatch />} />
               </Routes>
             </div>

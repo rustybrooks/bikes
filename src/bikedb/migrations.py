@@ -6,22 +6,28 @@ from warnings import filterwarnings
 from sqllib.sql import Migration
 
 logger = logging.getLogger(__name__)
-filterwarnings('ignore', message='Invalid utf8mb4 character string')
-filterwarnings('ignore', message='Duplicate entry')
+filterwarnings("ignore", message="Invalid utf8mb4 character string")
+filterwarnings("ignore", message="Duplicate entry")
 
 ##########################################################################################
 
 initial = Migration(1, "initial version")
 for table in [
-    'strava_power_curves', 'strava_speed_curves',
-    'strava_segment_histories', 'strava_segment_history_summaries',
-    'strava_activity_segment_effort_achs', 'strava_activity_segment_efforts', 'strava_segments',
-    'strava_activity_streams', 'strava_activities', 'users'
+    "strava_power_curves",
+    "strava_speed_curves",
+    "strava_segment_histories",
+    "strava_segment_history_summaries",
+    "strava_activity_segment_effort_achs",
+    "strava_activity_segment_efforts",
+    "strava_segments",
+    "strava_activity_streams",
+    "strava_activities",
+    "users",
 ]:
     initial.add_statement("drop table if exists {}".format(table))
 
-
-initial.add_statement("""
+initial.add_statement(
+    """
     create table users(
         user_id serial primary key,
         password varchar(200),
@@ -31,20 +37,26 @@ initial.add_statement("""
         refresh_token varchar(100),
         expires_at timestamp
     )
-""")
+"""
+)
 initial.add_statement("create index users_user_id on users(user_id)")
 
 new = Migration(2, "strava stuff")
 for table in [
-    'strava_power_curves', 'strava_speed_curves',
-    'strava_segment_histories', 'strava_segment_history_summaries',
-    'strava_activity_segment_effort_achs', 'strava_activity_segment_efforts', 'strava_segments',
-    'strava_activity_streams', 'strava_activities',
+    "strava_power_curves",
+    "strava_speed_curves",
+    "strava_segment_histories",
+    "strava_segment_history_summaries",
+    "strava_activity_segment_effort_achs",
+    "strava_activity_segment_efforts",
+    "strava_segments",
+    "strava_activity_streams",
+    "strava_activities",
 ]:
     new.add_statement("drop table if exists {}".format(table))
 
-
-new.add_statement("""
+new.add_statement(
+    """
     create table strava_activities(
         strava_activity_id bigint primary key,
         user_id bigint not null references users(user_id),
@@ -90,11 +102,17 @@ new.add_statement("""
         max_heartrate real,
         suffer_score integer
     )
-""")
-new.add_statement("create index strava_activities_id on strava_activities(strava_activity_id)")
-new.add_statement("create index strava_activities_user_id on strava_activities(user_id, strava_activity_id)")
+"""
+)
+new.add_statement(
+    "create index strava_activities_id on strava_activities(strava_activity_id)"
+)
+new.add_statement(
+    "create index strava_activities_user_id on strava_activities(user_id, strava_activity_id)"
+)
 
-new.add_statement("""
+new.add_statement(
+    """
     create table strava_segments(
         strava_segment_id bigint primary key,
         resource_state int not null,
@@ -123,11 +141,14 @@ new.add_statement("""
         hazardous bool not null default false,
         star_count int
     )
-""")
-new.add_statement("create index strava_segments_id on strava_segments(strava_segment_id)")
+"""
+)
+new.add_statement(
+    "create index strava_segments_id on strava_segments(strava_segment_id)"
+)
 
-
-new.add_statement("""
+new.add_statement(
+    """
     create table strava_activity_segment_efforts(
         strava_activity_segment_effort_id serial primary key,
         strava_activity_id bigint not null references strava_activities(strava_activity_id),
@@ -151,10 +172,14 @@ new.add_statement("""
         entries int,
         hidden bool not null default false
     )
-""")
-new.add_statement("create index strava_activity_segment_efforts_id on strava_activity_segment_efforts(strava_activity_segment_effort_id)")
+"""
+)
+new.add_statement(
+    "create index strava_activity_segment_efforts_id on strava_activity_segment_efforts(strava_activity_segment_effort_id)"
+)
 
-new.add_statement("""
+new.add_statement(
+    """
     create table strava_activity_segment_effort_achs(
         strava_activity_segment_effort_ach_id bigserial primary key,
         strava_activity_segment_effort_id integer not null references strava_activity_segment_efforts(strava_activity_segment_effort_id),
@@ -162,11 +187,14 @@ new.add_statement("""
         type varchar(100),
         rank integer not null
     )
-""")
-new.add_statement("create index strava_activity_segment_effort_achs_id on strava_activity_segment_effort_achs(strava_activity_segment_effort_ach_id)")
+"""
+)
+new.add_statement(
+    "create index strava_activity_segment_effort_achs_id on strava_activity_segment_effort_achs(strava_activity_segment_effort_ach_id)"
+)
 
-
-new.add_statement("""
+new.add_statement(
+    """
     create table strava_activity_streams(
         strava_activity_stream_id bigserial primary key,
         strava_activity_id bigint not null references strava_activities(strava_activity_id),
@@ -183,31 +211,108 @@ new.add_statement("""
         moving bool not null default false,
         grade_smooth real
     )
-""")
-new.add_statement("create index strava_activity_streams_id on strava_activity_streams(strava_activity_stream_id)")
-new.add_statement("create index strava_activity_streams_activity_id on strava_activity_streams(strava_activity_id)")
+"""
+)
+new.add_statement(
+    "create index strava_activity_streams_id on strava_activity_streams(strava_activity_stream_id)"
+)
+new.add_statement(
+    "create index strava_activity_streams_activity_id on strava_activity_streams(strava_activity_id)"
+)
 
-
-new.add_statement("""
+new.add_statement(
+    """
     create table strava_power_curves(
         strava_power_curve_id bigserial primary key,
         interval_length int not null,
         watts real not null,
         strava_activity_id bigint not null references strava_activities(strava_activity_id)
     )
-""")
-new.add_statement("create index strava_power_curves_id on strava_power_curves(strava_power_curve_id)")
-new.add_statement("create index strava_power_curves_activity_id on strava_power_curves(strava_activity_id)")
+"""
+)
+new.add_statement(
+    "create index strava_power_curves_id on strava_power_curves(strava_power_curve_id)"
+)
+new.add_statement(
+    "create index strava_power_curves_activity_id on strava_power_curves(strava_activity_id)"
+)
 
-new.add_statement("""
+new.add_statement(
+    """
     create table strava_speed_curves(
         strava_power_curve_id bigserial primary key,
         interval_length int not null,
         speed real not null,
         strava_activity_id bigint not null references strava_activities(strava_activity_id)
     )
-""")
-new.add_statement("create index strava_speed_curves_id on strava_speed_curves(strava_power_curve_id)")
-new.add_statement("create index strava_speed_curves_activity_id on strava_speed_curves(strava_activity_id)")
+"""
+)
+new.add_statement(
+    "create index strava_speed_curves_id on strava_speed_curves(strava_power_curve_id)"
+)
+new.add_statement(
+    "create index strava_speed_curves_activity_id on strava_speed_curves(strava_activity_id)"
+)
 
+new = Migration(3, "seasons")
+for table in [
+    "training_seasons",
+    "training_weeks",
+    "training_entries",
+    "training_races",
+]:
+    new.add_statement("drop table if exists {}".format(table))
 
+new.add_statement(
+    """
+    create table training_seasons(
+        training_season_id bigserial primary key,
+        user_id bigint not null references users(user_id),
+        training_plan varchar(100),
+        season_start_date date not null,
+        season_end_date date not null,
+        params jsonb
+    )
+"""
+)
+
+new.add_statement(
+    """
+    create table training_weeks(
+        training_week_id bigserial primary key,
+        training_season_id bigint not null references training_seasons(training_season_id),
+        week_offset int not null,
+        week_type varchar(100) not null,
+        week_type_num int not null
+    )
+"""
+)
+
+new.add_statement(
+    """
+    create table training_entries(
+        training_entry_id bigserial primary key,
+        training_season_id bigint not null references training_seasons(training_season_id),
+        training_week_id bigint not null references training_weeks(training_week_id),
+        workout_type varchar(100) not null,
+        scheduled_dow int not null,
+        scheduled_length float not null,
+        scheduled_length2 float,
+        actual_length float,
+        notes text
+    )
+    """
+)
+
+new.add_statement(
+    """
+    create table training_races(
+        training_race_id bigserial primary key,
+        training_season_id bigint not null references training_seasons(training_season_id),
+        race_date date not null,   
+        name varchar(200) not null,
+        location text,
+        priority char(1)
+    )
+"""
+)

@@ -1,0 +1,39 @@
+.navbar {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.navbarMain {
+    flex: 1;
+    margin-top: rem(0px);
+}
+
+.link {
+    width: rem(50px);
+    height: rem(50px);
+    border-radius: var(--mantine-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mantine-color-dark-6);
+
+    &:hover {
+        color:var(--mantine-color-gray-8);
+    }
+
+    &[data-active] {
+        &,
+        &:hover {
+            border-color:var(--mantine-color-green-5);
+            border-style: solid;
+            border-width: thin;
+            color: var(--mantine-color-green-5);
+        }
+    }
+}
+
+.logo {
+    height: 30px;
+    width: 30px;
+}

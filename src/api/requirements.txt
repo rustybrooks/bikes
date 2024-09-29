@@ -1,13 +1,1 @@
-# bson
-bcrypt
-python-dateutil
-pytz
-sqlalchemy==1.4
-flask
-gevent
-gunicorn
-psycopg2-binary
-flask-cors
-flask-login
-requests
-shapely
+

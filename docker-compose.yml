@@ -1,52 +1,66 @@
-version: '3.8'
+# version: '3.5'
 
 services:
   api:
     build:
       context: ./src/
       dockerfile: Dockerfile
+      target: base
+      args:
+        PRODUCTION: "${PRODUCTION:-false}"
     image: bikes-api:latest
     container_name: api
     ports:
-      - "3000:5000"
+      - "3000:3000"
     volumes:
       - ./data/:/srv/data
-      - ./src/:/srv/src/
+      - ./src/api:/srv/src/app
     environment:
-      - ENVIRONMENT=dev
+      - ENVIRONMENT=local
+      - DEBUG=${DEBUG:-true}
       - DATA_ROOT=/srv/data
       - CLIENT_ID=${CLIENT_ID:-9981}
       - CLIENT_SECRET=${CLIENT_SECRET}
-      - DB_HOST=postgres
+      - DB_HOST=db
       - DB_USER=wombat
       - DB_PASSWORD=1wombat2
-    entrypoint: /srv/src/api/entrypoint.sh
+      - DJANGO_SECRET_KEY=bananas
+    entrypoint: ./manage.py runserver 0.0.0.0:3000
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
 
-  bikedb:
-    build:
-      context: ./src/
-      dockerfile: Dockerfile
-    image: bikes-api:latest
-    container_name: bikedb
-    volumes:
-      - ./data/:/srv/data
-      - ./src/:/srv/src
-    environment:
-      - ENVIRONMENT=dev
-      - DATA_ROOT=/srv/data
-      - CLIENT_ID=${CLIENT_ID:-9981}
-      - CLIENT_SECRET=${CLIENT_SECRET}
-      - FLASK_STORAGE=0
-      - DB_HOST=postgres
-      - DB_USER=wombat
-      - DB_PASSWORD=1wombat2
-    entrypoint: /srv/src/bikedb/entrypoint.sh
+  manage:
+    extends: api
+    entrypoint: ./manage.py
+    profiles:
+      - manual
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
+
+#  bikedb:
+#    build:
+#      context: ./src/
+#      dockerfile: Dockerfile
+#    image: bikes-api:latest
+#    container_name: bikedb
+#    volumes:
+#      - ./data/:/srv/data
+#      - ./src/:/srv/src
+#    environment:
+#      - ENVIRONMENT=dev
+#      - DATA_ROOT=/srv/data
+#      - CLIENT_ID=${CLIENT_ID:-9981}
+#      - CLIENT_SECRET=${CLIENT_SECRET}
+#      - FLASK_STORAGE=0
+#      - DB_HOST=postgres
+#      - DB_USER=wombat
+#      - DB_PASSWORD=1wombat2
+#    entrypoint: /srv/src/bikedb/entrypoint.sh
+#    depends_on:
+#      db:
+#        condition: service_healthy
 
   ui:
     build:
@@ -62,7 +76,7 @@ services:
     ports:
         - "5000:5000"
 
-  postgres:
+  db:
     image: postgres:16
     restart: always
     environment:

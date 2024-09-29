@@ -17,28 +17,6 @@ logger = logging.getLogger(__name__)
 
 import bokeh.embed
 
-@login_required
-def index(request):
-    cal = models.Calendar(user=request.user, all=request.REQUEST.get('all', False))
-
-    script = bokeh.embed.autoload_server(
-        model=None,
-        app_path="/graphs/bike_weekly_summary",
-        url="http://graphs-home.rustybrooks.com:6000/"
-    )
-
-    context = {
-        'calendar': cal,
-        'reverse': reverse,
-        'urllib': urllib,
-        'datetime': datetime,
-        'graph_script': script,
-    }
-    logger.warn("---4")
-    return render_to_response("bikecal/index.html", context)
-
-def index_react(request):
-    return render_to_response("bikecal/index_react.html", {})
 
 
 @login_required
@@ -330,13 +308,4 @@ def segment(request, segment_id):
     return render_to_response("bikecal/segment.html", context)
 
 
-@login_required
-def reactest(request):
-    context = {
-    }
 
-    return render_to_response(
-        "bikecal/test.html",
-        context,
-
-    )

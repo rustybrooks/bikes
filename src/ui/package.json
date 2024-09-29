@@ -21,7 +21,8 @@
     "react-dom": "^18.3.1",
     "react-router": "^6.26.1",
     "react-router-dom": "^6.26.1",
-    "recharts": "^2.10.3"
+    "recharts": "^2.10.3",
+    "swr": "^2.2.5"
   },
   "devDependencies": {
     "@rustybrooks/eslint-config-prettier": "^1.0.18",

@@ -1,5 +1,6 @@
-from . import training_bible as tbdata
 from . import tcc as tccdata
+from . import training_bible as tbdata
+
 
 class TrainingPlan:
     def __init__(self, params):
@@ -23,7 +24,6 @@ class TCC(TrainingPlan):
         entries = []
         for dow in range(0, 7):
             dow_ind = (dow + start_index) % 7
-            print dow_ind
             wotype = patterns[dow_ind][0]
 
             #if dow not in entry_by_orig:
