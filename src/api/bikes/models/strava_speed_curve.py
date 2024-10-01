@@ -40,7 +40,7 @@ class StravaSpeedCurve(models.Model):
                 return
 
         segments = []
-        this_segment = []
+        this_segment: list[tuple] = []
 
         stream_data = StravaActivityStream.objects.filter(
             activity_id=activity_id
@@ -52,7 +52,7 @@ class StravaSpeedCurve(models.Model):
         logger.warning("Processing power curve for %d\n", activity_id)
 
         last = None
-        first = None
+        first: int
         for dat in stream_data:
             row = (
                 dat.time,
@@ -95,6 +95,6 @@ class StravaSpeedCurve(models.Model):
             s.interval_length = win
             s.speed = val
             s.activity_id = activity_id
-            s.start_index = 0
-            s.end_index = 0
+            # s.start_index = 0
+            # s.end_index = 0
             s.save()

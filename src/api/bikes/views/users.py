@@ -34,7 +34,7 @@ class SignupUserSerializer(serializers.Serializer):
         password2 = data["password2"]
 
         if not username or not password:
-            raise ValidationError({""})
+            raise ValidationError("Username and password required")
 
         if password != password2:
             raise ValidationError({"password": "Passwords don't match"})
@@ -85,7 +85,7 @@ class UserViewSet(
                 username=serializer.validated_data["username"],
                 password=serializer.validated_data["password"],
             )
-            serializer = UserSerializer(user)
-            return Response(serializer.data)
+            serializer2 = UserSerializer(user)
+            return Response(serializer2.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

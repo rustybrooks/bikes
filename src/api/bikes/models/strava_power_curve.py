@@ -3,7 +3,8 @@ import logging
 import numpy
 from django.db import models  # type: ignore
 
-from bikes.models import StravaActivity, StravaActivityStream  # type: ignore
+from bikes.models.strava_activity import StravaActivity
+from bikes.models.strava_activity_stream import StravaActivityStream
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +37,10 @@ class StravaPowerCurve(models.Model):
                 return
 
         segments = []
-        this_segment = []
+        this_segment: list[tuple] = []
 
         last = None
-        first = None
+        first: int
         stream_data = StravaActivityStream.objects.filter(
             activity_id=activity_id
         ).order_by("time")
@@ -85,6 +86,6 @@ class StravaPowerCurve(models.Model):
             p.interval_length = win
             p.watts = val
             p.activity_id = activity_id
-            p.start_index = 0
-            p.end_index = 0
+            # p.start_index = 0
+            # p.end_index = 0
             p.save()

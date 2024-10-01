@@ -11,7 +11,7 @@ from bikes.constants import Environment
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "aaa")
 DEBUG = os.getenv("DEBUG", "false") == "true"
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "corsheaders",
     "drf_yasg",
     "rest_framework",
+    "django_filters",
     "bikes",
 ]
 
@@ -179,6 +180,13 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.BasicAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ],
+    "DEFAULT_FILTER_BACKENDS": (
+        "django_filters.rest_framework.DjangoFilterBackend",
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
+    ),
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.LimitOffsetPagination",
+    "PAGE_SIZE": 100,
 }
 
 STATIC_URL = "static/"

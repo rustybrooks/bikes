@@ -1,6 +1,6 @@
 from django.db import models  # type: ignore
 
-from bikes.models import Season  # type: ignore
+from bikes.models.season import Season  # type: ignore
 
 
 class Race(models.Model):

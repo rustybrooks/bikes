@@ -1,3 +1,4 @@
+"""
 from . import tcc as tccdata
 from . import training_bible as tbdata
 
@@ -118,3 +119,4 @@ class CTB(TrainingPlan):
 
         #hours = tbdata.weekly_hours_lookup[entry.week.weekly_hours()][entry.scheduled_dow]
         return patterns[entry.scheduled_dow]
+"""

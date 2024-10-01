@@ -33,3 +33,4 @@ psutil~=5.9.8
 psycopg[binary]~=3.1.19
 uuid7~=0.1.0
 drf_yasg~=1.21.7
+django-filter~=24.3

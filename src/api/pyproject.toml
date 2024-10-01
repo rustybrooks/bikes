@@ -45,7 +45,6 @@ python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 check_untyped_defs = true
-
 exclude = [
     "venv",
     "manage.py",
@@ -53,7 +52,7 @@ exclude = [
     "bikes/wsgi.py",
     "bikesr/asgi.py",
 ]
-plugins = ["mypy_django_plugin.main"]
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
 
 [tool.django-stubs]
 django_settings_module = "bikes.settings"

@@ -1,30 +1,32 @@
 import datetime
 import json
 import logging
+from typing import Any
 from urllib.parse import urlencode
 
 from django.db import models  # type: ignore
 from django.urls import reverse  # type: ignore
 
-from bikes import plans  # type: ignore
+# from bikes import plans  # type: ignore
 from bikes.models import Race, Season
 
 logger = logging.getLogger(__name__)
 
-tpmap = {
-    "CTB": plans.CTB,
-    "TCC": plans.TCC,
-}
+# tpmap = {
+#     "CTB": plans.CTB,
+#     "TCC": plans.TCC,
+# }
 
 
 def tp_from_season(s):
-    logger.error(
-        "tp_from_season - season = %r, params = %r, tp = %r",
-        s,
-        s.params,
-        s.training_plan,
-    )
-    return tpmap[s.training_plan](json.loads(s.params))
+    # logger.error(
+    #     "tp_from_season - season = %r, params = %r, tp = %r",
+    #     s,
+    #     s.params,
+    #     s.training_plan,
+    # )
+    # return tpmap[s.training_plan](json.loads(s.params))
+    return []
 
 
 class TrainingWeek(models.Model):
@@ -57,7 +59,7 @@ class TrainingWeek(models.Model):
         return "%s:%s-%s" % (self.week_start_date, self.week_type, self.week_type_num)
 
     def json(self, cal):
-        output = {}
+        output: dict[str, Any] = {}
         output["entries"] = []
         for elist in cal.entries_by_week(self):
             output["entries"].append([e.json() for e in elist])
@@ -89,7 +91,7 @@ class TrainingWeek(models.Model):
         if populate:
             self.populate_entries(delete_first=True)
 
-        m = {}
+        m: dict[int, Any] = {}
         for d in range(7):
             m[d] = []
         for entry in TrainingEntry.objects.select_related("week").filter(week=self):

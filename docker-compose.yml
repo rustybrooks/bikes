@@ -5,7 +5,6 @@ services:
     build:
       context: ./src/
       dockerfile: Dockerfile
-      target: base
       args:
         PRODUCTION: "${PRODUCTION:-false}"
     image: bikes-api:latest

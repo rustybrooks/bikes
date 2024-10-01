@@ -1,6 +1,6 @@
 from django.db import models  # type: ignore
 
-from bikes.models import StravaActivity  # type: ignore
+from bikes.models.strava_activity import StravaActivity  # type: ignore
 from bikes.models.strava_segment import StravaSegment  # type: ignore
 
 
@@ -26,47 +26,47 @@ class StravaActivitySegmentEffort(models.Model):
     pr_rank = models.IntegerField(null=True)
     hidden = models.BooleanField(default=False)
 
-    @classmethod
-    def sync_one(cls, activity, segment):
-        id = segment["id"]
-        segs = cls.objects.filter(activity_segment_id=id)
-        if len(segs):
-            sege = segs[0]
-        else:
-            sege = StravaActivitySegmentEffort()
-            sege.activity_segment_id = id
-
-        sege.activity = activity
-        sege.start_datetime = segment.get("start_date")
-        sege.start_datetime_local = segment.get("start_date_local")
-
-        for key in [
-            "resource_state",
-            "name",
-            "elapsed_time",
-            "moving_time",
-            "distance",
-            "start_index",
-            "end_index",
-            "average_cadence",
-            "average_watts",
-            "device_watts",
-            "average_heartrate",
-            "max_heartrate",
-            "kom_rank",
-            "pr_rank",
-            "hidden",
-        ]:
-            # logger.warning("key = %r, val = %r", key, segment.get(key))
-            setattr(sege, key, segment.get(key))
-
-        sege.segment = StravaSegment.sync_one(segment["segment"])
-
-        sege.save()
-
-        StravaActivitySegmentEffortAch.sync(sege, segment["achievements"])
-
-        return sege
+    # @classmethod
+    # def sync_one(cls, activity, segment):
+    #     id = segment["id"]
+    #     segs = cls.objects.filter(activity_segment_id=id)
+    #     if len(segs):
+    #         sege = segs[0]
+    #     else:
+    #         sege = StravaActivitySegmentEffort()
+    #         sege.activity_segment_id = id
+    #
+    #     sege.activity = activity
+    #     sege.start_datetime = segment.get("start_date")
+    #     sege.start_datetime_local = segment.get("start_date_local")
+    #
+    #     for key in [
+    #         "resource_state",
+    #         "name",
+    #         "elapsed_time",
+    #         "moving_time",
+    #         "distance",
+    #         "start_index",
+    #         "end_index",
+    #         "average_cadence",
+    #         "average_watts",
+    #         "device_watts",
+    #         "average_heartrate",
+    #         "max_heartrate",
+    #         "kom_rank",
+    #         "pr_rank",
+    #         "hidden",
+    #     ]:
+    #         # logger.warning("key = %r, val = %r", key, segment.get(key))
+    #         setattr(sege, key, segment.get(key))
+    #
+    #     sege.segment = StravaSegment.sync_one(segment["segment"])
+    #
+    #     sege.save()
+    #
+    #     StravaActivitySegmentEffortAch.sync(sege, segment["achievements"])
+    #
+    #     return sege
 
 
 class StravaActivitySegmentEffortAch(models.Model):

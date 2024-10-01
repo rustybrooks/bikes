@@ -106,12 +106,12 @@ def get_token(code, user):
 
     data = response.json()
 
-    token_obj = bikes.models.strava_token.StravaTokens.objects.filter(user=user).first()
+    token_obj = bikes.models.StravaToken.objects.filter(user=user).first()
     if token_obj:
         token_obj.access_token = data["access_token"]
         token_obj.refresh_token = data["refresh_token"]
     else:
-        token_obj = bikes.models.strava_token.StravaTokens()
+        token_obj = bikes.models.strava_token.StravaToken()
         token_obj.user = user
         token_obj.access_token = data["access_token"]
         token_obj.refresh_token = data["refresh_token"]
@@ -122,7 +122,7 @@ def get_token(code, user):
 
 
 def refresh_token(user):
-    token_obj = bikes.models.strava_token.StravaTokens.objects.filter(user=user).first()
+    token_obj = bikes.models.StravaToken.objects.filter(user=user)[0]
 
     access_token_url = "https://www.strava.com/oauth/token"
     access_token_data = {

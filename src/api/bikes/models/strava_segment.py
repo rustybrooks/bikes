@@ -1,4 +1,7 @@
+from typing import Self, cast
+
 from django.db import models  # type: ignore
+from django.db.models import QuerySet
 
 
 class StravaSegment(models.Model):
@@ -33,12 +36,8 @@ class StravaSegment(models.Model):
     @classmethod
     def sync_one(cls, segment):
         id = segment["id"]
-        segs = cls.objects.filter(segment_id=id)
-        if len(segs):
-            seg = segs[0]
-        else:
-            seg = StravaSegment()
-            seg.segment_id = id
+        segs = StravaSegment.objects.filter(segment_id=id)
+        seg: Self = cast(Self, segs[0] if len(segs) else StravaSegment(segment_id=id))
 
         for key in [
             "resource_state",

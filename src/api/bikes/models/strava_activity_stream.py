@@ -1,6 +1,6 @@
 from django.db import models  # type: ignore
 
-from bikes.models import StravaActivity
+from bikes.models.strava_activity import StravaActivity
 
 
 class StravaActivityStream(models.Model):
@@ -38,11 +38,11 @@ class StravaActivityStream(models.Model):
 
     @property
     def distance_mi(self):
-        return self.distance / 1609.34
+        return (self.distance or 0) / 1609.34
 
     @property
     def speed_mph(self):
-        return (self.velocity_smooth / 1609.34) * 3600
+        return ((self.velocity_smooth or 0) / 1609.34) * 3600
 
     # # Note, this actually downloads the data too, via the API
     # @classmethod

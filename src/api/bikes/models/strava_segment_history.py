@@ -3,8 +3,10 @@ import logging
 
 from django.db import models  # type: ignore
 
-from bikes.libs import stravaapi  # type: ignore
-from bikes.models import StravaActivity, StravaSegment, StravaSegmentHistorySummary  # type: ignore
+from bikes.libs import stravaapi
+from bikes.models.strava_activity import StravaActivity
+from bikes.models.strava_segment import StravaSegment
+from bikes.models.strava_segment_history_summary import StravaSegmentHistorySummary  # type: ignore
 
 logger = logging.getLogger(__name__)
 

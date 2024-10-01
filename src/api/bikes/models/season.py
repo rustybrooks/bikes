@@ -1,6 +1,3 @@
-import datetime
-from collections import defaultdict
-
 from django.contrib.auth.models import User
 from django.db import models
 
@@ -29,8 +26,8 @@ class Season(models.Model):
     params = models.CharField(max_length=5000)
 
     # ftp_hr = 170  This is what I got from Rubber Glove last year but holy crap
-    ftp_hr = 167
-    ftp_watts = 247
+    ftp_hr = 163
+    ftp_watts = 215
 
     def zone_hr(self, zone):
         zones = {
