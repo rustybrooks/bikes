@@ -1,14 +1,16 @@
 # health check
-from django.conf import settings
-from django.conf.urls.static import static
+from django.conf import settings  # type: ignore
+from django.conf.urls.static import static  # type: ignore
 from django.urls import include, path, re_path  # type: ignore
-from rest_framework.routers import DefaultRouter, SimpleRouter
+from rest_framework.routers import SimpleRouter  # type: ignore
 
-from bikes.views.seasons import SeasonViewSet
+from bikes.views.seasons import SeasonViewSet  # type: ignore
 from bikes.views.swagger import SwaggerView  # type: ignore
+from bikes.views.users import UserViewSet  # type: ignore
 
 router = SimpleRouter()
-router.register(r'seasons', SeasonViewSet, basename='season')
+router.register(r"api/seasons", SeasonViewSet, basename="season")
+router.register(r"api/users", UserViewSet, basename="user")
 
 urlpatterns = [
     path("health/", include("health_check.urls")),
@@ -28,7 +30,6 @@ urlpatterns = [
     ),
 ]
 
-print("!!!", router.urls)
 urlpatterns += router.urls
 
 urlpatterns + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

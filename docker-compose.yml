@@ -22,6 +22,7 @@ services:
       - CLIENT_ID=${CLIENT_ID:-9981}
       - CLIENT_SECRET=${CLIENT_SECRET}
       - DB_HOST=db
+      - DB_NAME=bikes
       - DB_USER=wombat
       - DB_PASSWORD=1wombat2
       - DJANGO_SECRET_KEY=bananas

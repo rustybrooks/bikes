@@ -2,7 +2,8 @@ import useSWR, { KeyedMutator } from 'swr';
 import { BASE_URL } from '../constants/api';
 
 export const apiRoutes = {
-  USERS_ME: () => `api/users/me`,
+  USERS_LOGIN: () => `api/users/login/`,
+  USERS_SIGNUP: () => `api/users/signup/`,
 };
 
 export class UnauthenticatedError extends Error {
@@ -66,6 +67,48 @@ export const useUrl = <T>(
     isUnauthenticated: error instanceof UnauthenticatedError,
   };
 };
+
+// function useFetch<T>(
+//   url,
+//   options: Record<string, unknown> = {},
+// ): {
+//   data: T;
+//   loading: boolean;
+//   error: any;
+// } {
+//   const [data, setData] = useState(null);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState(null);
+//
+//   useEffect(() => {
+//     setLoading(true);
+//     setData(null);
+//     setError(null);
+//
+//     const headers = {
+//       ...(options?.headers || {}),
+//       'content-type': 'application/json',
+//     };
+//
+//     fetch(url, {
+//       ...options,
+//       credentials: 'include', // this is required in order for cross-site cookies to work
+//       headers,
+//     })
+//       .then(res => {
+//         setLoading(false);
+//         // checking for multiple responses for more flexibility
+//         // with the url we send in.
+//         if (res.body) setData(res.json() as T);
+//       })
+//       .catch(err => {
+//         setLoading(false);
+//         setError(err);
+//       });
+//   }, [url]);
+//
+//   return { data, loading, error };
+// }
 
 // type ApiListCountResponse<T> = {
 //   items: T[];

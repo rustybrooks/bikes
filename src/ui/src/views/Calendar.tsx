@@ -1,7 +1,6 @@
 import { Card, Center, Grid, LoadingOverlay, Stack, Text, Group, Box } from '@mantine/core';
 import { useContext, useEffect, useState } from 'react';
 import { IconBike, IconDeviceUnknown, IconRun, IconWalk } from '@tabler/icons-react';
-import { FrameworkContext } from '../contexts/FrameworkContext';
 
 import classes from './Calendar.module.css';
 
@@ -29,17 +28,16 @@ const actIcon = (type: string) => {
 export const Calendar = () => {
   const dow = ['Sat', 'Sun', 'Mon', 'Tues', 'Weds', 'Thurs', 'Fri'];
   const [calendar, setCalendar] = useState<Record<string, any>>({});
-  const { frameworks } = useContext(FrameworkContext);
 
-  useEffect(() => {
-    const getData = async () => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      setCalendar(await frameworks.data.Calendar.index({}));
-    };
-
-    getData();
-  }, [frameworks]);
+  // useEffect(() => {
+  //   const getData = async () => {
+  //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  //     // @ts-expect-error
+  //     setCalendar(await frameworks.data.Calendar.index({}));
+  //   };
+  //
+  //   getData();
+  // }, [frameworks]);
 
   return (
     <>

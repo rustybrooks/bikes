@@ -3,6 +3,11 @@ from django.core.management.base import BaseCommand, CommandError
 
 from bikecal import models
 
+import bikes.models.season
+import bikes.models.strava_activity
+import bikes.models.strava_activity_stream
+
+
 class Path(object):
     def __init__(self):
         pass
@@ -33,12 +38,12 @@ class Command(BaseCommand):
         path = PathSet()
 
         user = User.objects.filter(username='rbrooks').first()
-        seasons = models.Season.objects.filter(user=user).order_by('-season_start_date')
+        seasons = bikes.models.activity.Season.objects.filter(user=user).order_by('-season_start_date')
         season = seasons[0]
 
-        for activity in models.StravaActivity.objects.filter(start_datetime_local__gte=season.season_start_date):
+        for activity in bikes.models.strava_activity.StravaActivity.objects.filter(start_datetime_local__gte=season.season_start_date):
             last = None
-            for foo in models.StravaActivityStream.objects.filter(activity=activity):
+            for foo in bikes.models.strava_activity_stream.StravaActivityStream.objects.filter(activity=activity):
                 this = (foo.lat, foo.long)
                 if last:
 

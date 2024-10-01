@@ -7,6 +7,7 @@ import urllib.parse
 import pytz  # type: ignore
 import requests  # type: ignore
 
+import bikes.models.strava_token
 from bikes import models
 
 # from bikedb import queries  # type: ignore
@@ -105,12 +106,12 @@ def get_token(code, user):
 
     data = response.json()
 
-    token_obj = models.StravaTokens.objects.filter(user=user).first()
+    token_obj = bikes.models.strava_token.StravaTokens.objects.filter(user=user).first()
     if token_obj:
         token_obj.access_token = data["access_token"]
         token_obj.refresh_token = data["refresh_token"]
     else:
-        token_obj = models.StravaTokens()
+        token_obj = bikes.models.strava_token.StravaTokens()
         token_obj.user = user
         token_obj.access_token = data["access_token"]
         token_obj.refresh_token = data["refresh_token"]
@@ -121,7 +122,7 @@ def get_token(code, user):
 
 
 def refresh_token(user):
-    token_obj = models.StravaTokens.objects.filter(user=user).first()
+    token_obj = bikes.models.strava_token.StravaTokens.objects.filter(user=user).first()
 
     access_token_url = "https://www.strava.com/oauth/token"
     access_token_data = {
