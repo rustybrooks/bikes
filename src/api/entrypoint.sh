@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+set -e
+set -x
+
 cd /srv/src/app
 
 echo "Server starting DEBUG=${DEBUG}"
