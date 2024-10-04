@@ -10,7 +10,8 @@ RUN apt-get -y update \
 COPY requirements.txt requirements.dev.txt api/gunicorn.py api/pyproject.toml ./
 RUN pip3 install -r /srv/src/app/requirements.txt -r requirements.dev.txt
 
-COPY api/bikes/ api/static/ /srv/src/app/
+COPY api/bikes/ /srv/src/app/bikes/
+COPY api/static/ /srv/src/app/static/
 COPY api/manage.py api/entrypoint.sh /srv/src/app/
 
 FROM python:3.12-slim-bookworm AS final
@@ -24,7 +25,8 @@ WORKDIR /srv/src/app
 COPY --from=base /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
 COPY --from=base /usr/local/bin/ /usr/local/bin/
 COPY --from=base /usr/local/lib/ /usr/local/lib/
-COPY --from=base /srv/src/app/bikes/ /srv/src/app/static/ ./
+COPY --from=base /srv/src/app/bikes/ ./bikes/
+COPY --from=base /srv/src/app/static/ ./static/
 COPY --from=base /srv/src/app/manage.py /srv/src/app/entrypoint.sh /srv/src/app/gunicorn.py ./
 
 # RUN DJANGO_SECRET_KEY=foo ./manage.py collectstatic
