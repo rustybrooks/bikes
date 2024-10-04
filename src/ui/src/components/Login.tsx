@@ -1,7 +1,7 @@
 import { Button, Container, Paper, PasswordInput, Tabs, TextInput, Title } from '@mantine/core';
 import { useContext, useState } from 'react';
 import { NavigateFunction, useNavigate } from 'react-router';
-import { apiFetch, apiRoutes, apiUrl } from '../api/api-fetch.ts';
+import { apiFetch, apiUrl } from '../api/api-fetch.ts';
 
 const login = async (navigate: NavigateFunction, username: string, password: string): Promise<string> => {
   try {

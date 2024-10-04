@@ -8,6 +8,17 @@ from drf_yasg import openapi
 
 from bikes.constants import Environment
 
+
+class DisableCSRFMiddleware(object):
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        setattr(request, "_dont_enforce_csrf_checks", True)
+        response = self.get_response(request)
+        return response
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -64,7 +75,8 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     # "django.middleware.csrf.CsrfViewMiddleware",
-    # "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "bikes.settings.DisableCSRFMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
     # "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -173,6 +185,11 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = [*corsheaders.defaults.default_headers]
 
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5000",
+    "https://bikes.rustybrooks.com",
+    "https://bikes.rustybrooks.net",
+]
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),

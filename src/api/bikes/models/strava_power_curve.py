@@ -3,9 +3,6 @@ import logging
 import numpy
 from django.db import models  # type: ignore
 
-from bikes.models.strava_activity import StravaActivity
-from bikes.models.strava_activity_stream import StravaActivityStream
-
 logger = logging.getLogger(__name__)
 
 
@@ -13,7 +10,7 @@ class StravaPowerCurve(models.Model):
     power_curve_id = models.AutoField(primary_key=True)
     interval_length = models.IntegerField()
     watts = models.FloatField()
-    activity = models.ForeignKey(StravaActivity, on_delete=models.DO_NOTHING)
+    activity = models.ForeignKey("StravaActivity", on_delete=models.DO_NOTHING)
 
     @classmethod
     def window(cls, data, length):
@@ -29,6 +26,8 @@ class StravaPowerCurve(models.Model):
 
     @classmethod
     def process_curve(cls, activity_id, delete=False):
+        from bikes.models.strava_activity_stream import StravaActivityStream
+
         existing = cls.objects.filter(activity_id=activity_id)
         if len(existing):
             if delete:
@@ -48,7 +47,7 @@ class StravaPowerCurve(models.Model):
             logger.warning("No stream data for %d", activity_id)
             return
 
-        logger.warning("Processing power curve for %d\n", activity_id)
+        logger.info("Processing power curve for %d", activity_id)
 
         for dat in stream_data:
             row = (dat.time, dat.watts if dat.watts else 0)

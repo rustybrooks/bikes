@@ -3,18 +3,13 @@ import logging
 
 from django.db import models  # type: ignore
 
-from bikes.libs import stravaapi
-from bikes.models.strava_activity import StravaActivity
-from bikes.models.strava_segment import StravaSegment
-from bikes.models.strava_segment_history_summary import StravaSegmentHistorySummary  # type: ignore
-
 logger = logging.getLogger(__name__)
 
 
 class StravaSegmentHistory(models.Model):
     segment_history_id = models.AutoField(primary_key=True)
-    segment = models.ForeignKey(StravaSegment, on_delete=models.DO_NOTHING)
-    activity = models.ForeignKey(StravaActivity, on_delete=models.DO_NOTHING)
+    segment = models.ForeignKey("StravaSegment", on_delete=models.DO_NOTHING)
+    activity = models.ForeignKey("StravaActivity", on_delete=models.DO_NOTHING)
     recorded_datetime = models.DateTimeField()
     rank = models.IntegerField()
     entries = models.IntegerField()
@@ -26,6 +21,11 @@ class StravaSegmentHistory(models.Model):
 
     @classmethod
     def sync_one(cls, user, segment_id, athlete_id):
+        from bikes.libs import stravaapi
+        from bikes.models.strava_segment_history_summary import (
+            StravaSegmentHistorySummary,  # type: ignore
+        )
+
         try:
             leaderboard = stravaapi.get_segment_leaderboard(user, segment_id)
         except stravaapi.StravaError:

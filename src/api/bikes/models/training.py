@@ -1,5 +1,4 @@
 import datetime
-import json
 import logging
 from typing import Any
 from urllib.parse import urlencode
@@ -8,7 +7,6 @@ from django.db import models  # type: ignore
 from django.urls import reverse  # type: ignore
 
 # from bikes import plans  # type: ignore
-from bikes.models import Race, Season
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +44,7 @@ class TrainingWeek(models.Model):
 
     week_start_date = models.DateField()
     season = models.ForeignKey(
-        Season,
+        "Season",
         unique_for_date="week_start_date",
         on_delete=models.DO_NOTHING,
         blank=True,
@@ -72,6 +70,8 @@ class TrainingWeek(models.Model):
         return output
 
     def races(self, race_filter=None):
+        from bikes.models import Race
+
         if race_filter is None:
             race_filter = Race.objects.filter(season=self.season)
 
@@ -166,7 +166,7 @@ class TrainingEntry(models.Model):
 
     entry_date = models.DateField()
     season = models.ForeignKey(
-        Season, unique_for_date="entry_date", on_delete=models.DO_NOTHING
+        "Season", unique_for_date="entry_date", on_delete=models.DO_NOTHING
     )
     week = models.ForeignKey(TrainingWeek, on_delete=models.DO_NOTHING)
     workout_type = models.CharField(max_length=50)  # , choices=NAME_CHOICES

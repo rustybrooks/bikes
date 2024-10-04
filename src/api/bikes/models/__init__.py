@@ -9,6 +9,7 @@ from .strava_activity_stream import StravaActivityStream  # type: ignore
 from .strava_power_curve import StravaPowerCurve  # type: ignore
 from .strava_segment import StravaSegment  # type: ignore
 from .strava_segment_history import StravaSegmentHistory  # type: ignore
+from .strava_segment_history_summary import StravaSegmentHistorySummary  # type: ignore
 from .strava_speed_curve import StravaSpeedCurve  # type: ignore
 from .strava_token import StravaToken  # type: ignore
 from .training import TrainingEntry, TrainingWeek  # type: ignore

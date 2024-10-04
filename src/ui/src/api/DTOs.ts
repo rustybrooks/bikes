@@ -155,7 +155,7 @@ export enum ContentType {
 }
 
 export class HttpClient<SecurityDataType = unknown> {
-  public baseUrl: string = 'http://localhost:3000';
+  public baseUrl: string = 'http://localhost:3000/api';
   private securityData: SecurityDataType | null = null;
   private securityWorker?: ApiConfig<SecurityDataType>['securityWorker'];
   private abortControllers = new Map<CancelToken, AbortController>();
@@ -320,7 +320,7 @@ export class HttpClient<SecurityDataType = unknown> {
 /**
  * @title Bikes API
  * @version v1
- * @baseUrl http://localhost:3000
+ * @baseUrl http://localhost:3000/api
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   seasons = {
@@ -480,6 +480,40 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         body: data,
         secure: true,
         type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags users
+     * @name UsersStravaCallback
+     * @request GET:/users/strava_callback/
+     * @secure
+     */
+    usersStravaCallback: (params: RequestParams = {}) =>
+      this.request<User[], any>({
+        path: `/users/strava_callback/`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags users
+     * @name UsersStravaConnect
+     * @request GET:/users/strava_connect/
+     * @secure
+     */
+    usersStravaConnect: (params: RequestParams = {}) =>
+      this.request<User[], any>({
+        path: `/users/strava_connect/`,
+        method: 'GET',
+        secure: true,
         format: 'json',
         ...params,
       }),

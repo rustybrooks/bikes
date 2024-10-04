@@ -7,8 +7,7 @@ import urllib.parse
 import pytz  # type: ignore
 import requests  # type: ignore
 
-import bikes.models.strava_token
-from bikes import models
+from bikes.models import StravaToken
 
 # from bikedb import queries  # type: ignore
 
@@ -60,18 +59,24 @@ def retry_request(url, max_seconds=300, status_forcelist=None, **kwargs):
 
 
 def get_auth_code(user):
-    if user.expires_at and user.expires_at <= datetime.datetime.utcnow():
+    token = StravaToken.objects.filter(user=user).first()
+    if not token:
+        return None
+
+    if token.expires_at and token.expires_at <= datetime.datetime.now(
+        datetime.timezone.utc
+    ):
         logger.warning(
             "expires at %r now = %r", user.expires_at, datetime.datetime.utcnow()
         )
-        user.access_token = refresh_token(user)
+        token = refresh_token(user)
 
-    return user.access_token
+    return token.access_token
 
 
 def redirect_token(return_to_url="/"):
-    if os.getenv("ENVIRONMENT", "dev") == "dev":
-        redirect_uri = "http://localhost:5000/strava_callback"
+    if os.getenv("ENVIRONMENT", "dev") == "local":
+        redirect_uri = "http://localhost:5000/strava_callback/"
     else:
         redirect_uri = "https://bikes-api.prod.rustybrooks.net/strava_callback"
 
@@ -97,6 +102,7 @@ def get_token(code, user):
         "client_secret": client_secret,
         "code": code,
     }
+    logger.info("sending access data %r", access_token_data)
 
     response = requests.post(
         url=access_token_url,
@@ -105,16 +111,23 @@ def get_token(code, user):
     )
 
     data = response.json()
+    logger.info("token data %r", data)
 
-    token_obj = bikes.models.StravaToken.objects.filter(user=user).first()
+    token_obj = StravaToken.objects.filter(user=user).first()
     if token_obj:
         token_obj.access_token = data["access_token"]
         token_obj.refresh_token = data["refresh_token"]
+        token_obj.expires_at = datetime.datetime.fromtimestamp(
+            data["expires_at"],
+        )
     else:
-        token_obj = bikes.models.strava_token.StravaToken()
+        token_obj = StravaToken()
         token_obj.user = user
         token_obj.access_token = data["access_token"]
         token_obj.refresh_token = data["refresh_token"]
+        token_obj.expires_at = datetime.datetime.fromtimestamp(
+            data["expires_at"],
+        )
 
     token_obj.save()
 
@@ -122,7 +135,7 @@ def get_token(code, user):
 
 
 def refresh_token(user):
-    token_obj = bikes.models.StravaToken.objects.filter(user=user)[0]
+    token_obj = StravaToken.objects.filter(user=user)[0]
 
     access_token_url = "https://www.strava.com/oauth/token"
     access_token_data = {
@@ -142,6 +155,9 @@ def refresh_token(user):
 
     token_obj.access_token = data["access_token"]
     token_obj.refresh_token = data["refresh_token"]
+    token_obj.expires_at = datetime.datetime.fromtimestamp(
+        data["expires_at"],
+    )
     token_obj.save()
 
     return data["access_token"]

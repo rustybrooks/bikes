@@ -1,5 +1,9 @@
+import logging
+
 from django.contrib.auth.models import User
-from django.db import models  # type: ignore
+from django.db import models, transaction  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 
 class StravaActivity(models.Model):
@@ -87,95 +91,104 @@ class StravaActivity(models.Model):
     # def sync_one_byobj(cls, user, activity):
     #     data = stravaapi.get_activity(user, activity.activity_id)
     #     cls.sync_one(user, data, full=True, rebuild=True)
-    #
-    # @classmethod
-    # @transaction.atomic
-    # def sync_one(cls, user, activity, full=False, rebuild=False):
-    #     activity_id = activity["id"]
-    #     actlist = cls.objects.filter(activity_id=activity_id)
-    #
-    #     # If we already have this one, let's not resync
-    #     if len(actlist) and not rebuild:
-    #         return
-    #
-    #     if "segment_efforts" not in activity and full:
-    #         return cls.sync_one(user, stravaapi.get_activity(user, activity["id"]))
-    #
-    #     new = False
-    #     if len(actlist):
-    #         act = actlist[0]
-    #     else:
-    #         act = StravaActivity()
-    #         act.activity_id = activity_id
-    #         act.user = user
-    #         new = True
-    #
-    #     for key in [
-    #         "external_id",
-    #         "upload_id",
-    #         "activity_name",
-    #         "distance",
-    #         "moving_time",
-    #         "elapsed_time",
-    #         "total_elevation_gain",
-    #         "elev_high",
-    #         "elev_low",
-    #         "type",
-    #         "timezone",
-    #         "achievement_count",
-    #         "athlete_count",
-    #         "trainer",
-    #         "commute",
-    #         "manual",
-    #         "private",
-    #         "embed_token",
-    #         "workout_type",
-    #         "gear_id",
-    #         "average_speed",
-    #         "max_speed",
-    #         "average_cadence",
-    #         "average_temp",
-    #         "average_watts",
-    #         "max_watts",
-    #         "weighted_average_watts",
-    #         "kilojoules",
-    #         "device_watts",
-    #         "average_heartrate",
-    #         "max_heartrate",
-    #         "suffer_score",
-    #         "flagged",
-    #     ]:
-    #         setattr(act, key, activity.get(key))
-    #
-    #     act.athlete_id = activity["athlete"]["id"]
-    #
-    #     act.start_datetime = activity["start_date"]
-    #     act.start_datetime_local = activity["start_date_local"]
-    #
-    #     act.start_lat = (
-    #         activity["start_latlng"][0] if activity["start_latlng"] else None
-    #     )
-    #     act.start_long = (
-    #         activity["start_latlng"][1] if activity["start_latlng"] else None
-    #     )
-    #     act.end_lat = activity["end_latlng"][0] if activity["end_latlng"] else None
-    #     act.end_long = activity["end_latlng"][1] if activity["end_latlng"] else None
-    #
-    #     act.save()
-    #
-    #     if "segment_efforts" in activity:
-    #         for e in activity.get("segment_efforts", []):
-    #             effort = StravaActivitySegmentEffort.sync_one(act, e)
-    #
-    #             if new:
-    #                 StravaSegmentHistory.sync_one(
-    #                     user, effort.segment_id, act.athlete_id
-    #                 )
-    #
-    #     StravaActivityStream.sync(user, act)
-    #
-    #     return act
-    #
+
+    @classmethod
+    @transaction.atomic
+    def sync_one(cls, user, activity, full=False, rebuild=False):
+        from bikes.models import (
+            StravaActivitySegmentEffort,
+            StravaActivityStream,
+            StravaSegmentHistory,
+            StravaSpeedCurve,  # type: ignore
+        )
+
+        activity_id = activity["id"]
+        actlist = cls.objects.filter(activity_id=activity_id)
+
+        # If we already have this one, let's not resync
+        if len(actlist) and not rebuild:
+            return
+
+        logger.info(f"Syncing strava activity id={activity['id']}")
+
+        # if "segment_efforts" not in activity and full:
+        #     return cls.sync_one(user, stravaapi.get_activity(user, activity["id"]))
+
+        new = False
+        if len(actlist):
+            act = actlist[0]
+        else:
+            act = StravaActivity()
+            act.activity_id = activity_id
+            act.user = user
+            new = True
+
+        for key in [
+            "external_id",
+            "upload_id",
+            "activity_name",
+            "distance",
+            "moving_time",
+            "elapsed_time",
+            "total_elevation_gain",
+            "elev_high",
+            "elev_low",
+            "type",
+            "timezone",
+            "achievement_count",
+            "athlete_count",
+            "trainer",
+            "commute",
+            "manual",
+            "private",
+            "embed_token",
+            "workout_type",
+            "gear_id",
+            "average_speed",
+            "max_speed",
+            "average_cadence",
+            "average_temp",
+            "average_watts",
+            "max_watts",
+            "weighted_average_watts",
+            "kilojoules",
+            "device_watts",
+            "average_heartrate",
+            "max_heartrate",
+            "suffer_score",
+            "flagged",
+        ]:
+            setattr(act, key, activity.get(key))
+
+        act.athlete_id = activity["athlete"]["id"]
+
+        act.start_datetime = activity["start_date"]
+        act.start_datetime_local = activity["start_date_local"]
+
+        act.start_lat = (
+            activity["start_latlng"][0] if activity["start_latlng"] else None
+        )
+        act.start_long = (
+            activity["start_latlng"][1] if activity["start_latlng"] else None
+        )
+        act.end_lat = activity["end_latlng"][0] if activity["end_latlng"] else None
+        act.end_long = activity["end_latlng"][1] if activity["end_latlng"] else None
+
+        act.save()
+
+        if "segment_efforts" in activity:
+            for e in activity.get("segment_efforts", []):
+                effort = StravaActivitySegmentEffort.sync_one(act, e)
+
+                if new:
+                    StravaSegmentHistory.sync_one(
+                        user, effort.segment_id, act.athlete_id
+                    )
+
+        StravaActivityStream.sync(user, act)
+
+        return act
+
     # @classmethod
     # def sync_many(cls, user, first_date=None):
     #     first_date = first_date or (tznow() - datetime.timedelta(days=14))
@@ -183,7 +196,7 @@ class StravaActivity(models.Model):
     #     activities = stravaapi.get_activities(user, after=first_date)
     #     for act in activities:
     #         cls.sync_one(user, act, full=True)
-    #
+
     # @classmethod
     # def update_incomplete(cls, user):
     #     incomplete = cls.objects.filter(embed_token__isnull=True)
@@ -196,7 +209,7 @@ class StravaActivity(models.Model):
     #     incomplete = cls.objects.filter(embed_token__isnull=True)
     #
     #     return updated, len(incomplete)
-    #
+
     # @classmethod
     # def update_streams(cls, user):
     #     all = cls.objects.filter()
@@ -222,33 +235,38 @@ class StravaActivity(models.Model):
     #             break
     #
     #     return updated
-    #
-    # @classmethod
-    # def update_curves(cls):
-    #     all = cls.objects.filter()
-    #
-    #     updated = 0
-    #     for activity in all:
-    #         streams1 = StravaPowerCurve.objects.filter(activity=activity)
-    #         streams2 = StravaSpeedCurve.objects.filter(activity=activity)
-    #         if len(streams1) and len(streams2):
-    #             continue
-    #
-    #         if not len(streams1):
-    #             StravaPowerCurve.process_curve(activity.activity_id)
-    #
-    #         if not len(streams2):
-    #             StravaSpeedCurve.process_curve(activity.activity_id)
-    #
-    #     updated += 1
-    #
-    #     #            if updated >= 10:
-    #     #                break
-    #
-    #     return updated
-    #
-    # def __unicode__(self):
-    #     return "Strava Activity: %s (%0.1f hours)" % (
-    #         self.start_datetime_local,
-    #         self.moving_time / (60.0 * 60),
-    #     )
+
+    @classmethod
+    def update_curves(cls):
+        from bikes.models import (
+            StravaPowerCurve,
+            StravaSpeedCurve,  # type: ignore
+        )
+
+        all = cls.objects.filter()
+
+        updated = 0
+        for activity in all:
+            streams1 = StravaPowerCurve.objects.filter(activity=activity)
+            streams2 = StravaSpeedCurve.objects.filter(activity=activity)
+            if len(streams1) and len(streams2):
+                continue
+
+            if not len(streams1):
+                StravaPowerCurve.process_curve(activity.activity_id)
+
+            if not len(streams2):
+                StravaSpeedCurve.process_curve(activity.activity_id)
+
+        updated += 1
+
+        #            if updated >= 10:
+        #                break
+
+        return updated
+
+    def __unicode__(self):
+        return "Strava Activity: %s (%0.1f hours)" % (
+            self.start_datetime_local,
+            self.moving_time / (60.0 * 60),
+        )

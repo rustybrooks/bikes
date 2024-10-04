@@ -1,14 +1,21 @@
+import logging
+
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User  # type: ignore
+from django.http import HttpResponseRedirect
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, serializers, status, viewsets  # type: ignore
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet  # type: ignore
 
 from bikes import models  # type: ignore
+from bikes.libs import stravaapi  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -61,7 +68,7 @@ class UserViewSet(
         request_body=LoginUserSerializer, responses={200: UserSerializer}
     )
     @action(detail=False, methods=["post"])
-    def login(self, request):
+    def login(self, request: Request):
         user = authenticate(
             request,
             username=request.data["username"],
@@ -89,3 +96,14 @@ class UserViewSet(
             return Response(serializer2.data)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["get"])
+    def strava_connect(self, _request: Request):
+        authorize_url = stravaapi.redirect_token()
+        return HttpResponseRedirect(redirect_to=authorize_url)
+
+    @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
+    def strava_callback(self, request: Request, **kwargs):
+        logger.info("user=%r kwargs=%r", request.user, kwargs)
+        stravaapi.get_token(request.data["code"], request.user)
+        return Response(UserSerializer(request.user).data)

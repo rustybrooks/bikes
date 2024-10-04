@@ -4,6 +4,7 @@ import { BASE_URL } from '../constants/api';
 export const apiRoutes = {
   USERS_LOGIN: () => `api/users/login/`,
   USERS_SIGNUP: () => `api/users/signup/`,
+  USERS_STRAVA_CALLBACK: () => `api/users/strava_callback/`,
 };
 
 export class UnauthenticatedError extends Error {

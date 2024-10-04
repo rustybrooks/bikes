@@ -6,6 +6,7 @@ import { Header } from './components/Header';
 import { NavBar } from './components/NavBar';
 import { TrainingPlans } from './views/TrainingPlans';
 import { Calendar } from './views/Calendar';
+import { StravaCallback } from './views/StravaCallback';
 
 const theme = createTheme({
   //
@@ -168,6 +169,7 @@ export const App = () => {
             <Routes>
               <Route path="/" element={<Calendar />} />
               <Route path="/training" element={<TrainingPlans />} />
+              <Route path="/strava_callback" element={<StravaCallback />} />
               <Route element={<NoMatch />} />
             </Routes>
           </div>

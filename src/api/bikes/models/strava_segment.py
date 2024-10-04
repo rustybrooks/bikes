@@ -1,7 +1,6 @@
 from typing import Self, cast
 
 from django.db import models  # type: ignore
-from django.db.models import QuerySet
 
 
 class StravaSegment(models.Model):

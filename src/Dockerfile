@@ -10,23 +10,24 @@ RUN apt-get -y update \
 COPY requirements.txt requirements.dev.txt api/pyproject.toml ./
 RUN pip3 install -r /srv/src/app/requirements.txt -r requirements.dev.txt
 
+COPY api/bikes/ /srv/src/app/bikes/
+COPY api/manage.py api/entrypoint.sh /srv/src/app/
+
 FROM python:3.12-slim-bookworm AS final
-WORKDIR /usr/src/api
+WORKDIR /srv/src/app
 
-RUN addgroup --gid 1111 nonroot \
-    && adduser --gid 1111 --uid 1111 nonroot \
-    && echo 'nonroot ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+# RUN addgroup --gid 1111 nonroot \
+#     && adduser --gid 1111 --uid 1111 nonroot
 
-USER nonroot
+# USER nonroot
 
 COPY --from=base /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
 COPY --from=base /usr/local/bin/ /usr/local/bin/
 COPY --from=base /usr/local/lib/ /usr/local/lib/
-COPY api/bikes/ ./bikes/
-COPY api/manage.py ./
-COPY api/entrypoint.sh ./
+COPY --from=base /srv/src/app/bikes/ ./bikes/
+COPY --from=base /srv/src/app/manage.py /srv/src/app/entrypoint.sh ./
 
 # RUN DJANGO_SECRET_KEY=foo ./manage.py collectstatic
 
 ENV PYTHONUNBUFFERED 1
-ENTRYPOINT /usr/src/app/entrypoint.sh
+ENTRYPOINT /srv/src/app/entrypoint.sh

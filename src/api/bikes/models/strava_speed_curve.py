@@ -3,8 +3,6 @@ import logging
 import numpy
 from django.db import models  # type: ignore
 
-from bikes.models import StravaActivity, StravaActivityStream  # type: ignore
-
 logger = logging.getLogger(__name__)
 
 
@@ -12,7 +10,7 @@ class StravaSpeedCurve(models.Model):
     speed_curve_id = models.AutoField(primary_key=True)
     interval_length = models.IntegerField()
     speed = models.FloatField()
-    activity = models.ForeignKey(StravaActivity, on_delete=models.DO_NOTHING)
+    activity = models.ForeignKey("StravaActivity", on_delete=models.DO_NOTHING)
 
     @property
     def speed_mph(self):
@@ -32,6 +30,8 @@ class StravaSpeedCurve(models.Model):
 
     @classmethod
     def process_curve(cls, activity_id, delete=False):
+        from bikes.models.strava_activity_stream import StravaActivityStream  # type: ignore
+
         existing = cls.objects.filter(activity_id=activity_id)
         if len(existing):
             if delete:
@@ -49,7 +49,7 @@ class StravaSpeedCurve(models.Model):
             logger.warning("No stream data for %d", activity_id)
             return
 
-        logger.warning("Processing power curve for %d\n", activity_id)
+        logger.info("Processing speed curve for %d", activity_id)
 
         last = None
         first: int
