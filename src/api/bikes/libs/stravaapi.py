@@ -67,7 +67,7 @@ def get_auth_code(user):
         datetime.timezone.utc
     ):
         logger.warning(
-            "expires at %r now = %r", user.expires_at, datetime.datetime.utcnow()
+            "expires at %r now = %r", token.expires_at, datetime.datetime.utcnow()
         )
         token = refresh_token(user)
 
@@ -160,7 +160,7 @@ def refresh_token(user):
     )
     token_obj.save()
 
-    return data["access_token"]
+    return token_obj
 
 
 def build_url(pieces):

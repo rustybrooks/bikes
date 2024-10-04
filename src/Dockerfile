@@ -7,7 +7,7 @@ RUN apt-get -y update \
                libpq-dev gcc libgdal-dev \
     && pip3 install --upgrade pip
 
-COPY requirements.txt requirements.dev.txt api/pyproject.toml ./
+COPY requirements.txt requirements.dev.txt gunicorn.py api/pyproject.toml ./
 RUN pip3 install -r /srv/src/app/requirements.txt -r requirements.dev.txt
 
 COPY api/bikes/ /srv/src/app/bikes/

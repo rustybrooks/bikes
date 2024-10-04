@@ -30,6 +30,7 @@ services:
 
   manage:
     extends: api
+    container_name: manage
     entrypoint: ./manage.py
     profiles:
       - manual
@@ -39,7 +40,9 @@ services:
 
   bikedb:
     extends: api
+    container_name: bikedb
     entrypoint: ./manage.py sync
+    ports: !reset []
     profiles:
       - manual
     depends_on:
