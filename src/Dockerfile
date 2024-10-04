@@ -25,7 +25,7 @@ COPY --from=base /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3
 COPY --from=base /usr/local/bin/ /usr/local/bin/
 COPY --from=base /usr/local/lib/ /usr/local/lib/
 COPY --from=base /srv/src/app/bikes/ ./bikes/
-COPY --from=base /srv/src/app/manage.py /srv/src/app/entrypoint.sh ./
+COPY --from=base /srv/src/app/manage.py /srv/src/app/entrypoint.sh /srv/src/app/gunicorn.py ./
 
 # RUN DJANGO_SECRET_KEY=foo ./manage.py collectstatic
 
