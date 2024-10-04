@@ -4,7 +4,7 @@ WORKDIR /srv/src/app
 
 RUN apt-get -y update \
     && apt-get install -y build-essential libspatialindex-dev \
-               libpq-dev gcc libgdal-dev \
+               libpq-dev gcc libgdal-dev curl \
     && pip3 install --upgrade pip
 
 COPY requirements.txt requirements.dev.txt api/gunicorn.py api/pyproject.toml ./
