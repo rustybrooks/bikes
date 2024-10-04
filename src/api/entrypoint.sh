@@ -15,6 +15,6 @@ DJANGO_WORKERS=${DJANGO_WORKERS:-2}
 ./manage.py migrate
 ./manage.py check --deploy
 
-gunicorn --config /srv/src/api/gunicorn.py bikes.wsgi
+gunicorn --config /srv/src/app/gunicorn.py bikes.wsgi
 
 
