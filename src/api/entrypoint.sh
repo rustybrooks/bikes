@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cd /srv/src
+cd /srv/src/app
 
 echo "Server starting DEBUG=${DEBUG}"
 echo "DB_NAME=${DB_NAME} DB_USER=${DB_USER} DB_HOST=${DB_HOST} DB_PORT=${DB_PORT}"
@@ -15,9 +15,6 @@ DJANGO_WORKERS=${DJANGO_WORKERS:-2}
 ./manage.py migrate
 ./manage.py check --deploy
 
-while true; do 
-    gunicorn --config /srv/src/api/gunicorn.py bikes.wsgi
+gunicorn --config /srv/src/api/gunicorn.py bikes.wsgi
 
-    sleep 10
- done
 

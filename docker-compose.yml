@@ -37,28 +37,14 @@ services:
       db:
         condition: service_healthy
 
-#  bikedb:
-#    build:
-#      context: ./src/
-#      dockerfile: Dockerfile
-#    image: bikes-api:latest
-#    container_name: bikedb
-#    volumes:
-#      - ./data/:/srv/data
-#      - ./src/:/srv/src
-#    environment:
-#      - ENVIRONMENT=dev
-#      - DATA_ROOT=/srv/data
-#      - CLIENT_ID=${CLIENT_ID:-9981}
-#      - CLIENT_SECRET=${CLIENT_SECRET}
-#      - FLASK_STORAGE=0
-#      - DB_HOST=postgres
-#      - DB_USER=wombat
-#      - DB_PASSWORD=1wombat2
-#    entrypoint: /srv/src/bikedb/entrypoint.sh
-#    depends_on:
-#      db:
-#        condition: service_healthy
+  bikedb:
+    extends: api
+    entrypoint: ./manage.py sync
+    profiles:
+      - manual
+    depends_on:
+      db:
+        condition: service_healthy
 
   ui:
     build:

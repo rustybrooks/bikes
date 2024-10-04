@@ -1,5 +1,5 @@
-import { Card, Center, Grid, LoadingOverlay, Stack, Text, Group, Box } from '@mantine/core';
-import { useContext, useEffect, useState } from 'react';
+import { Box, Card, Center, Grid, Group, LoadingOverlay, Stack, Text } from '@mantine/core';
+import { useState } from 'react';
 import { IconBike, IconDeviceUnknown, IconRun, IconWalk } from '@tabler/icons-react';
 
 import classes from './Calendar.module.css';
@@ -27,7 +27,7 @@ const actIcon = (type: string) => {
 
 export const Calendar = () => {
   const dow = ['Sat', 'Sun', 'Mon', 'Tues', 'Weds', 'Thurs', 'Fri'];
-  const [calendar, setCalendar] = useState<Record<string, any>>({});
+  const [calendar] = useState<Record<string, any>>({});
 
   // useEffect(() => {
   //   const getData = async () => {
