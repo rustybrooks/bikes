@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
       args:
         PRODUCTION: "${PRODUCTION:-false}"
+      # target: base
     image: bikes-api:latest
     container_name: api
     ports:
