@@ -78,7 +78,7 @@ def redirect_token(return_to_url="/"):
     if os.getenv("ENVIRONMENT", "dev") == "local":
         redirect_uri = "http://localhost:5000/strava_callback/"
     else:
-        redirect_uri = "https://bikesrustybrooks.com/strava_callback/"
+        redirect_uri = "https://bikes.rustybrooks.com/strava_callback/"
 
     authorize_url = "https://www.strava.com/oauth/authorize"
     authorize_url += "?"
