@@ -20,6 +20,6 @@ DJANGO_WORKERS=${DJANGO_WORKERS:-2}
 
 mkdir -p /srv/logs
 
-gunicorn --config /srv/src/app/gunicorn.py bikes.wsgi
+exec gunicorn --config /srv/src/app/gunicorn.py bikes.wsgi
 
 
