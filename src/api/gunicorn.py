@@ -8,6 +8,7 @@ preload_app = True
 worker_class = "gthread"
 threads = 4
 timeout = 200
+bind = "127.0.0.1:5000"
 
 # max_requests = 10000
 # max_requests_jitter = int(max_requests / 2)
