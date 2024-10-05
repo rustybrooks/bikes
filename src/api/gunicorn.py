@@ -1,8 +1,8 @@
 import logging.config
 
 workers = 4
-accesslog = "/srv/logs/gunicorn_access.log"
-errorlog = " /srv/logs/gunicorn_errors.log"
+# accesslog = "/srv/logs/gunicorn_access.log"
+# errorlog = " /srv/logs/gunicorn_errors.log"
 preload_app = True
 # worker_class = 'gevent'
 worker_class = "gthread"
