@@ -1,4 +1,8 @@
+import logging
+
 from django.db import models  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 
 class StravaActivitySegmentEffort(models.Model):
@@ -25,6 +29,10 @@ class StravaActivitySegmentEffort(models.Model):
 
     @classmethod
     def sync_one(cls, activity, segment):
+        from bikes.models import StravaSegment
+
+        # logger.info("sync one segment effort id=%r", segment["id"])
+
         id = segment["id"]
         segs = cls.objects.filter(activity_segment_id=id)
         if len(segs):
@@ -58,7 +66,6 @@ class StravaActivitySegmentEffort(models.Model):
             setattr(sege, key, segment.get(key))
 
         sege.segment = StravaSegment.sync_one(segment["segment"])
-
         sege.save()
 
         StravaActivitySegmentEffortAch.sync(sege, segment["achievements"])
@@ -82,11 +89,14 @@ class StravaActivitySegmentEffortAch(models.Model):
             return
 
         cls.objects.filter(segment_effort=segment_effort).delete()
+        objs = []
         for ach in achievements:
-            a = StravaActivitySegmentEffortAch()
-            a.segment_effort = segment_effort
-            a.type_id = ach["type_id"]
-            a.type = ach["type"]
-            a.rank = ach["rank"]
+            a = StravaActivitySegmentEffortAch(
+                segment_effort=segment_effort,
+                type_id=ach["type_id"],
+                type=ach["type"],
+                rank=ach["rank"],
+            )
+            objs.append(a)
 
-            a.save()
+        StravaActivitySegmentEffortAch.objects.bulk_create(objs)

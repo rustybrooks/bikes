@@ -95,6 +95,7 @@ class StravaActivity(models.Model):
     @classmethod
     @transaction.atomic
     def sync_one(cls, user, activity, full=False, rebuild=False):
+        from bikes.libs import stravaapi
         from bikes.models import (
             StravaActivitySegmentEffort,
             StravaActivityStream,
@@ -109,10 +110,12 @@ class StravaActivity(models.Model):
         if len(actlist) and not rebuild:
             return
 
-        logger.info(f"Syncing strava activity id={activity['id']}")
+        if "segment_efforts" not in activity and full:
+            return cls.sync_one(user, stravaapi.get_activity(user, activity["id"]))
 
-        # if "segment_efforts" not in activity and full:
-        #     return cls.sync_one(user, stravaapi.get_activity(user, activity["id"]))
+        logger.info(
+            f"Syncing strava activity id={activity['id']} start={activity['start_date']}"
+        )
 
         new = False
         if len(actlist):
@@ -178,12 +181,12 @@ class StravaActivity(models.Model):
 
         if "segment_efforts" in activity:
             for e in activity.get("segment_efforts", []):
-                effort = StravaActivitySegmentEffort.sync_one(act, e)
+                _effort = StravaActivitySegmentEffort.sync_one(act, e)
 
-                if new:
-                    StravaSegmentHistory.sync_one(
-                        user, effort.segment_id, act.athlete_id
-                    )
+                # if new:
+                #     StravaSegmentHistory.sync_one(
+                #         user, effort.segment_id, act.athlete_id
+                #     )
 
         StravaActivityStream.sync(user, act)
 

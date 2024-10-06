@@ -73,22 +73,23 @@ class StravaPowerCurve(models.Model):
         segments.append(this_segment)
         logger.info("segments = %r", len(segments))
 
-        max_seconds = row[0] - first
+        max_seconds = min(row[0] - first, 60 * 60 * 24)
         intervals = list(range(1, 10, 1))
         intervals.extend(range(10, 5 * 60, 10))
         intervals.extend(range(5 * 60, 15 * 60, 30))
-        intervals.extend(range(15 * 60, max_seconds, 60))
+        intervals.extend(range(15 * 60, 2 * 60 * 60, 60))
+        intervals.extend(range(2 * 60 * 60, max_seconds, 60 * 10))
 
+        power_objects = []
         for i, win in enumerate(intervals):
-            logger.info("interval=%r (%r/%r)", win, i + 1, len(intervals))
+            # logger.info("interval=%r (%r/%r)", win, i + 1, len(intervals))
             val = max([cls.window(s, win) for s in segments])
             if val == 0:
                 continue
 
-            p = StravaPowerCurve()
-            p.interval_length = win
-            p.watts = val
-            p.activity_id = activity_id
-            # p.start_index = 0
-            # p.end_index = 0
-            p.save()
+            p = StravaPowerCurve(
+                interval_length=win, watts=val, activity_id=activity_id
+            )
+            power_objects.append(p)
+
+        StravaPowerCurve.objects.bulk_create(power_objects)

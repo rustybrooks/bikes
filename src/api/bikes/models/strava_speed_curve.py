@@ -78,23 +78,23 @@ class StravaSpeedCurve(models.Model):
 
         segments.append(this_segment)
 
-        max_seconds = row[0] - first
+        max_seconds = min(row[0] - first, 60 * 60 * 24)
         intervals = list(range(1, 10, 1))
         intervals.extend(range(10, 5 * 60, 10))
         intervals.extend(range(5 * 60, 15 * 60, 30))
-        intervals.extend(range(15 * 60, max_seconds, 60))
+        intervals.extend(range(15 * 60, 2 * 60 * 60, 60))
+        intervals.extend(range(2 * 60 * 60, max_seconds, 60 * 10))
 
+        speed_objects = []
         for win in intervals:
             val = max([cls.window(s, win) for s in segments])
 
             if val == 0:
                 continue
 
-            #            logger.warning("Adding point %r", (activity_id_, interval_length, val)
-            s = StravaSpeedCurve()
-            s.interval_length = win
-            s.speed = val
-            s.activity_id = activity_id
-            # s.start_index = 0
-            # s.end_index = 0
-            s.save()
+            s = StravaSpeedCurve(
+                interval_length=win, speed=val, activity_id=activity_id
+            )
+            speed_objects.append(s)
+
+        StravaSpeedCurve.objects.bulk_create(speed_objects)

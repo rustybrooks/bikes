@@ -28,9 +28,11 @@ class StravaSegmentHistory(models.Model):
 
         try:
             leaderboard = stravaapi.get_segment_leaderboard(user, segment_id)
-        except stravaapi.StravaError:
+        except stravaapi.StravaError as e:
             logger.warning(
-                "Failed to fetch segment leaderboard for segment id %d", segment_id
+                "Failed to fetch segment leaderboard for segment id %d err=%r",
+                segment_id,
+                e.message,
             )
             return
 
