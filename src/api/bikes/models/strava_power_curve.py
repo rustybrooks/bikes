@@ -47,7 +47,9 @@ class StravaPowerCurve(models.Model):
             logger.warning("No stream data for %d", activity_id)
             return
 
-        logger.info("Processing power curve for %d", activity_id)
+        logger.info(
+            "Processing power curve for %d (samples=%r)", activity_id, len(stream_data)
+        )
 
         for dat in stream_data:
             row = (dat.time, dat.watts if dat.watts else 0)
@@ -69,6 +71,7 @@ class StravaPowerCurve(models.Model):
             last = row
 
         segments.append(this_segment)
+        logger.info("segments = %r", len(segments))
 
         max_seconds = row[0] - first
         intervals = list(range(1, 10, 1))
@@ -76,7 +79,8 @@ class StravaPowerCurve(models.Model):
         intervals.extend(range(5 * 60, 15 * 60, 30))
         intervals.extend(range(15 * 60, max_seconds, 60))
 
-        for win in intervals:
+        for i, win in enumerate(intervals):
+            logger.info("interval=%r (%r/%r)", win, i + 1, len(intervals))
             val = max([cls.window(s, win) for s in segments])
             if val == 0:
                 continue

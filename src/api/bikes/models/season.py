@@ -23,7 +23,7 @@ class Season(models.Model):
     season_start_date = models.DateField()
     season_end_date = models.DateField()
     # annual_hours = models.IntegerField()
-    params = models.CharField(max_length=5000)
+    params = models.JSONField(max_length=5000)
 
     # ftp_hr = 170  This is what I got from Rubber Glove last year but holy crap
     ftp_hr = 163

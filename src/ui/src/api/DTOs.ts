@@ -24,14 +24,49 @@ export interface Season {
    * @format date
    */
   season_end_date: string;
-  /**
-   * Params
-   * @minLength 1
-   * @maxLength 5000
-   */
-  params: string;
+  /** Params */
+  params: object;
   /** User */
   user: number;
+}
+
+export interface TrainingBibleV1In {
+  /**
+   * Season start date
+   * @format date
+   */
+  season_start_date: string;
+  /**
+   * Season end date
+   * @format date
+   */
+  season_end_date: string;
+  /** Annual hours */
+  annual_hours: number;
+}
+
+export interface TrainingWeekOut {
+  /** ID */
+  id?: number;
+  /**
+   * Week start date
+   * @format date
+   */
+  week_start_date: string;
+  /**
+   * Week type
+   * @minLength 1
+   * @maxLength 50
+   */
+  week_type: string;
+  /**
+   * Week type num
+   * @min -2147483648
+   * @max 2147483647
+   */
+  week_type_num: number;
+  /** Season */
+  season?: number | null;
 }
 
 export interface User {
@@ -363,6 +398,25 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * No description
      *
      * @tags seasons
+     * @name SeasonsPreviewTrainingBibleV1
+     * @request POST:/seasons/preview_training_bible_v1/
+     * @secure
+     */
+    seasonsPreviewTrainingBibleV1: (data: TrainingBibleV1In, params: RequestParams = {}) =>
+      this.request<TrainingWeekOut[], any>({
+        path: `/seasons/preview_training_bible_v1/`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags seasons
      * @name SeasonsRead
      * @request GET:/seasons/{id}/
      * @secure
@@ -489,14 +543,16 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @tags users
      * @name UsersStravaCallback
-     * @request GET:/users/strava_callback/
+     * @request POST:/users/strava_callback/
      * @secure
      */
-    usersStravaCallback: (params: RequestParams = {}) =>
-      this.request<User[], any>({
+    usersStravaCallback: (data: User, params: RequestParams = {}) =>
+      this.request<User, any>({
         path: `/users/strava_callback/`,
-        method: 'GET',
+        method: 'POST',
+        body: data,
         secure: true,
+        type: ContentType.Json,
         format: 'json',
         ...params,
       }),

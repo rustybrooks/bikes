@@ -6,14 +6,16 @@ from urllib.parse import urlencode
 from django.db import models  # type: ignore
 from django.urls import reverse  # type: ignore
 
+from bikes import plans
+
 # from bikes import plans  # type: ignore
 
 logger = logging.getLogger(__name__)
 
-# tpmap = {
-#     "CTB": plans.CTB,
-#     "TCC": plans.TCC,
-# }
+tpmap = {
+    "CTB": plans.CTBv1,
+    "TCC": plans.TCC,
+}
 
 
 def tp_from_season(s):
@@ -23,8 +25,7 @@ def tp_from_season(s):
     #     s.params,
     #     s.training_plan,
     # )
-    # return tpmap[s.training_plan](json.loads(s.params))
-    return []
+    return tpmap[s.training_plan](s.params)
 
 
 class TrainingWeek(models.Model):
