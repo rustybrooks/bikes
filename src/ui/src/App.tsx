@@ -5,8 +5,8 @@ import { AppShell, createTheme, MantineProvider, rem } from '@mantine/core';
 import { Header } from './components/Header';
 import { NavBar } from './components/NavBar';
 import { TrainingPlans } from './views/TrainingPlans';
-import { Calendar } from './views/Calendar';
 import { StravaCallback } from './views/StravaCallback';
+import { Home } from './views/Home';
 
 const theme = createTheme({
   //
@@ -167,7 +167,7 @@ export const App = () => {
         <AppShell.Main>
           <div>
             <Routes>
-              <Route path="/" element={<Calendar />} />
+              <Route path="/" element={<Home />} />
               <Route path="/training" element={<TrainingPlans />} />
               <Route path="/strava_callback" element={<StravaCallback />} />
               <Route element={<NoMatch />} />

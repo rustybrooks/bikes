@@ -61,6 +61,7 @@ class StravaActivityStream(models.Model):
             types.append(stream["type"])
             datas.append(stream["data"])
 
+        objs = []
         for datum in zip(*datas):
             # logger.warning("%r", zip(types, datum))
             s = StravaActivityStream()
@@ -72,7 +73,9 @@ class StravaActivityStream(models.Model):
                 else:
                     setattr(s, t, d)
 
-            s.save()
+            objs.append(s)
+
+        StravaActivityStream.objects.bulk_create(objs)
 
         StravaPowerCurve.process_curve(activity.activity_id)
         StravaSpeedCurve.process_curve(activity.activity_id)

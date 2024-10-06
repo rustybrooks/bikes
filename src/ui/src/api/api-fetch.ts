@@ -1,10 +1,13 @@
 import useSWR, { KeyedMutator } from 'swr';
 import { BASE_URL } from '../constants/api';
+import { ActivityOut } from './DTOs';
 
 export const apiRoutes = {
   USERS_LOGIN: () => `api/users/login/`,
   USERS_SIGNUP: () => `api/users/signup/`,
   USERS_STRAVA_CALLBACK: () => `api/users/strava_callback/`,
+  ACTIVITIES_LIST: (params: Record<string, any>) => `api/activities/?${new URLSearchParams(params).toString()}`,
+  ACTIVITIES_READ: (activityId: number | string) => `api/activities/${activityId}/`,
 };
 
 export class UnauthenticatedError extends Error {
@@ -17,7 +20,9 @@ export class UnauthenticatedError extends Error {
 }
 
 export const apiUrl = (apiRoute: keyof typeof apiRoutes) => {
-  return `${BASE_URL}/${apiRoutes[apiRoute]()}`;
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  return (...args: any[]) => `${BASE_URL}/${apiRoutes[apiRoute](...args)}`;
 };
 
 export const apiFetch = async (url: string, options: Record<string, unknown>) => {
@@ -44,7 +49,7 @@ export const apiFetch = async (url: string, options: Record<string, unknown>) =>
 };
 
 export const useUrl = <T>(
-  apiRoute: keyof typeof apiRoutes,
+  url: string,
   key: string | object | null = null,
   options: Record<string, unknown> = {},
 ): {
@@ -54,7 +59,7 @@ export const useUrl = <T>(
   mutate: KeyedMutator<unknown>;
   isUnauthenticated: boolean;
 } => {
-  const url = apiUrl(apiRoute);
+  console.log('useUrl', { url, key, options });
   const { data, error, mutate } = useSWR([url, key || ''], () => apiFetch(url, options), {
     revalidateOnFocus: false,
     revalidateIfStale: false,
@@ -111,15 +116,11 @@ export const useUrl = <T>(
 //   return { data, loading, error };
 // }
 
-// type ApiListCountResponse<T> = {
-//   items: T[];
-//   count: number;
-// };
+type ApiListCountResponse<T> = {
+  items: T[];
+  count: number;
+};
 
-// export const useUsersMe = () => useUrl<MeResponse>('USERS_ME');
-// export const useUsersLogout = () => useUrl<MeResponse>('USERS_LOGOUT');
-// export const useUsersTokenExchange = (code: string, body: TokenExchangeIn) =>
-//   useUrl<TokenExchangeOut>('USERS_TOKEN_EXCHANGE', code, { method: 'POST', body: JSON.stringify(body) });
-// export const useAgentsList = () => useUrl<ApiListCountResponse<AgentOut>>('AGENTS_LIST');
-// export const useRepositoriesList = () => useUrl<ApiListCountResponse<RepositoryOut>>('REPOSITORIES_LIST');
-// export const useAlertsList = () => useUrl<ApiListCountResponse<AlertOut>>('ALERTS_LIST');
+export const useActivitiesList = (params: Record<string, any>) =>
+  useUrl<ApiListCountResponse<ActivityOut>>(apiUrl('ACTIVITIES_LIST')(params));
+export const useActivity = (activityId: string) => useUrl<ActivityOut>(apiUrl('ACTIVITIES_READ')(activityId));

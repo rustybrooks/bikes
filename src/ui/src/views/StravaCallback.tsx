@@ -5,7 +5,7 @@ import { apiFetch, apiUrl } from '../api/api-fetch';
 const callback = async (code: string | null) => {
   const body = JSON.stringify({ code });
   console.log('body!', { body });
-  const resp = await apiFetch(apiUrl('USERS_STRAVA_CALLBACK'), {
+  const resp = await apiFetch(apiUrl('USERS_STRAVA_CALLBACK')(), {
     method: 'POST',
     body,
   });

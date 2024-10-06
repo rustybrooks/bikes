@@ -4,7 +4,6 @@ import time
 from pathlib import Path
 
 import corsheaders.defaults
-from drf_yasg import openapi
 
 from bikes.constants import Environment
 

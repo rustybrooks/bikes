@@ -9,6 +9,153 @@
  * ---------------------------------------------------------------
  */
 
+export interface ActivityOut {
+  /**
+   * Activity id
+   * @min -9223372036854776000
+   * @max 9223372036854776000
+   */
+  activity_id: number;
+  /**
+   * External id
+   * @minLength 1
+   */
+  external_id?: string | null;
+  /**
+   * Upload id
+   * @min -9223372036854776000
+   * @max 9223372036854776000
+   */
+  upload_id?: number | null;
+  /**
+   * Athlete id
+   * @min -9223372036854776000
+   * @max 9223372036854776000
+   */
+  athlete_id: number;
+  /**
+   * Activity name
+   * @minLength 1
+   */
+  activity_name?: string | null;
+  /** Distance */
+  distance: number;
+  /**
+   * Moving time
+   * @min -2147483648
+   * @max 2147483647
+   */
+  moving_time: number;
+  /**
+   * Elapsed time
+   * @min -2147483648
+   * @max 2147483647
+   */
+  elapsed_time: number;
+  /** Total elevation gain */
+  total_elevation_gain: number;
+  /** Elev high */
+  elev_high?: number | null;
+  /** Elev low */
+  elev_low?: number | null;
+  /**
+   * Type
+   * @minLength 1
+   */
+  type: string;
+  /**
+   * Start datetime
+   * @format date-time
+   */
+  start_datetime?: string | null;
+  /**
+   * Start datetime local
+   * @format date-time
+   */
+  start_datetime_local: string;
+  /**
+   * Timezone
+   * @minLength 1
+   */
+  timezone: string;
+  /** Start lat */
+  start_lat?: number | null;
+  /** Start long */
+  start_long?: number | null;
+  /** End lat */
+  end_lat?: number | null;
+  /** End long */
+  end_long?: number | null;
+  /**
+   * Achievement count
+   * @min -2147483648
+   * @max 2147483647
+   */
+  achievement_count: number;
+  /**
+   * Athlete count
+   * @min -2147483648
+   * @max 2147483647
+   */
+  athlete_count: number;
+  /** Trainer */
+  trainer?: boolean;
+  /** Commute */
+  commute?: boolean;
+  /** Manual */
+  manual?: boolean;
+  /** Private */
+  private?: boolean;
+  /**
+   * Embed token
+   * @minLength 1
+   */
+  embed_token?: string | null;
+  /** Flagged */
+  flagged?: boolean;
+  /**
+   * Workout type
+   * @min -2147483648
+   * @max 2147483647
+   */
+  workout_type?: number | null;
+  /**
+   * Gear id
+   * @minLength 1
+   */
+  gear_id?: string | null;
+  /** Average speed */
+  average_speed?: number | null;
+  /** Max speed */
+  max_speed?: number | null;
+  /** Average cadence */
+  average_cadence?: number | null;
+  /** Average temp */
+  average_temp?: number | null;
+  /** Average watts */
+  average_watts?: number | null;
+  /** Max watts */
+  max_watts?: number | null;
+  /** Weighted average watts */
+  weighted_average_watts?: number | null;
+  /** Kilojoules */
+  kilojoules?: number | null;
+  /** Device watts */
+  device_watts?: boolean | null;
+  /** Average heartrate */
+  average_heartrate?: number | null;
+  /** Max heartrate */
+  max_heartrate?: number | null;
+  /**
+   * Suffer score
+   * @min -2147483648
+   * @max 2147483647
+   */
+  suffer_score?: number | null;
+  /** User */
+  user: number;
+}
+
 export interface Season {
   /** ID */
   id?: number;
@@ -358,6 +505,41 @@ export class HttpClient<SecurityDataType = unknown> {
  * @baseUrl http://localhost:3000/api
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
+  activities = {
+    /**
+     * No description
+     *
+     * @tags activities
+     * @name ActivitiesList
+     * @request GET:/activities/
+     * @secure
+     */
+    activitiesList: (params: RequestParams = {}) =>
+      this.request<ActivityOut[], any>({
+        path: `/activities/`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags activities
+     * @name ActivitiesRead
+     * @request GET:/activities/{activity_id}/
+     * @secure
+     */
+    activitiesRead: (activityId: number, params: RequestParams = {}) =>
+      this.request<ActivityOut, any>({
+        path: `/activities/${activityId}/`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
   seasons = {
     /**
      * No description
