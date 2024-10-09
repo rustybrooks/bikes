@@ -59,7 +59,7 @@ export const useUrl = <T>(
   mutate: KeyedMutator<unknown>;
   isUnauthenticated: boolean;
 } => {
-  console.log('useUrl', { url, key, options });
+  // console.log('useUrl', { url, key, options });
   const { data, error, mutate } = useSWR([url, key || ''], () => apiFetch(url, options), {
     revalidateOnFocus: false,
     revalidateIfStale: false,
@@ -117,7 +117,7 @@ export const useUrl = <T>(
 // }
 
 type ApiListCountResponse<T> = {
-  items: T[];
+  results: T[];
   count: number;
 };
 

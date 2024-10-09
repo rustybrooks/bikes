@@ -1,4 +1,5 @@
 import datetime
+import logging
 import time
 
 from django.contrib.auth.models import User
@@ -6,6 +7,8 @@ from django.core.management.base import BaseCommand
 
 from bikes.libs import stravaapi  # type: ignore
 from bikes.models import StravaActivity  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -26,18 +29,23 @@ class Command(BaseCommand):
                     last_act.start_datetime
                     if last_act
                     else datetime.datetime(2000, 1, 1)
-                    # else datetime.datetime.now(datetime.timezone.utc)
-                    # - datetime.timedelta(days=30)
                 )
+                last_date = datetime.datetime.now(
+                    datetime.timezone.utc
+                ) - datetime.timedelta(days=60)
 
                 print(f"Syncing {user.username} starting at {last_date}")
 
-                activities = stravaapi.get_activities(
-                    user, after=last_date - datetime.timedelta(days=1)
-                )
-                for act in activities:
-                    StravaActivity.sync_one(user, act, full=True)
+                try:
+                    activities = stravaapi.get_activities(
+                        user, after=last_date - datetime.timedelta(days=1)
+                    )
+                    for act in activities:
+                        StravaActivity.sync_one(user, act, full=True)
+                except Exception:
+                    logger.exception("Failed to retrieve activities")
 
-            diff = (60 * 5) - (time.time() - t1)
-            print(f"sleeping {diff} seconds")
+            took = time.time() - t1
+            diff = (60 * 5) - took
+            print(f"sleeping {diff:0.1f} seconds (took {took:0.1f} seconds)")
             time.sleep(diff)

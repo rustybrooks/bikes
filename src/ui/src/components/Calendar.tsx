@@ -1,8 +1,9 @@
 import { Box, Card, Center, Grid, Group, LoadingOverlay, Stack, Text } from '@mantine/core';
-import { useState } from 'react';
 import { IconBike, IconDeviceUnknown, IconRun, IconWalk } from '@tabler/icons-react';
+import { DateTime, Interval } from 'luxon';
 
 import classes from './Calendar.module.css';
+import { ActivityOut } from '../api/DTOs';
 
 const METER_TO_MILE = 0.6 / 1000;
 
@@ -25,19 +26,24 @@ const actIcon = (type: string) => {
   }
 };
 
-export const Calendar = () => {
-  const dow = ['Sat', 'Sun', 'Mon', 'Tues', 'Weds', 'Thurs', 'Fri'];
-  const [calendar] = useState<Record<string, any>>({});
+type CalendarEntry = {
+  activities: ActivityOut[];
+};
 
-  // useEffect(() => {
-  //   const getData = async () => {
-  //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  //     // @ts-expect-error
-  //     setCalendar(await frameworks.data.Calendar.index({}));
-  //   };
-  //
-  //   getData();
-  // }, [frameworks]);
+export const Calendar = ({ activities, firstDate, lastDate }: { activities: ActivityOut[]; firstDate: DateTime; lastDate: DateTime }) => {
+  const dow = ['Sat', 'Sun', 'Mon', 'Tues', 'Weds', 'Thurs', 'Fri'];
+
+  console.log(firstDate.toISO());
+  const calendar: Record<string, CalendarEntry> = Object.fromEntries(
+    Interval.fromDateTimes(firstDate.startOf('day'), lastDate.endOf('day'))
+      .splitBy({ day: 1 })
+      .map((date: Interval) => [date.start.toISODate(), { activities: [] }]),
+  );
+
+  activities.forEach(activity => {
+    const localStart = DateTime.fromISO(activity.start_datetime || '');
+    calendar[localStart.toISODate() || ''].activities.push(activity);
+  });
 
   return (
     <>

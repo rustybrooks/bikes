@@ -63,12 +63,9 @@ def get_auth_code(user):
     if not token:
         return None
 
-    if token.expires_at and token.expires_at <= datetime.datetime.now(
-        datetime.timezone.utc
-    ):
-        logger.warning(
-            "expires at %r now = %r", token.expires_at, datetime.datetime.utcnow()
-        )
+    now = datetime.datetime.now(datetime.timezone.utc)
+    if token.expires_at and token.expires_at <= now:
+        logger.warning("expires at %r now = %r", token.expires_at, now)
         token = refresh_token(user)
 
     return token.access_token
