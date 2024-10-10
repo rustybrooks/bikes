@@ -1,13 +1,15 @@
 import useSWR, { KeyedMutator } from 'swr';
 import { BASE_URL } from '../constants/api';
-import { ActivityOut } from './DTOs';
+import { ActivityOut, Season } from './DTOs';
 
 export const apiRoutes = {
   USERS_LOGIN: () => `api/users/login/`,
   USERS_SIGNUP: () => `api/users/signup/`,
   USERS_STRAVA_CALLBACK: () => `api/users/strava_callback/`,
   ACTIVITIES_LIST: (params: Record<string, any>) => `api/activities/?${new URLSearchParams(params).toString()}`,
-  ACTIVITIES_READ: (activityId: number | string) => `api/activities/${activityId}/`,
+  // ACTIVITIES_READ: (activityId: number | string) => `api/activities/${activityId}/`,
+  SEASONS_LIST: (params: Record<string, any>) => `api/seasons/?${new URLSearchParams(params).toString()}`,
+  SEASONS_CTB_PREVIEW: () => `api/seasons/preview_training_bible_v1/`,
 };
 
 export class UnauthenticatedError extends Error {
@@ -123,4 +125,5 @@ type ApiListCountResponse<T> = {
 
 export const useActivitiesList = (params: Record<string, any>) =>
   useUrl<ApiListCountResponse<ActivityOut>>(apiUrl('ACTIVITIES_LIST')(params));
-export const useActivity = (activityId: string) => useUrl<ActivityOut>(apiUrl('ACTIVITIES_READ')(activityId));
+// export const useActivity = (activityId: string) => useUrl<ActivityOut>(apiUrl('ACTIVITIES_READ')(activityId));
+export const useSeasonsList = (params: Record<string, any>) => useUrl<ApiListCountResponse<Season>>(apiUrl('SEASONS_LIST')(params));

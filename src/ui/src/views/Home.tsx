@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { DateTime } from 'luxon';
+import { LoadingOverlay } from '@mantine/core';
 import { useActivitiesList } from '../api/api-fetch';
 import { Calendar } from '../components/Calendar';
 
@@ -19,10 +20,9 @@ export const Home = () => {
     start_datetime_local__lte: lastDate.toISO(),
   });
 
-  console.log('Ad!', activityData);
-
   return (
     <div>
+      <LoadingOverlay visible={isLoading} zIndex={1000} overlayProps={{ radius: 'sm', blur: 2 }} />
       <Calendar activities={activityData?.results || []} firstDate={firstDate} lastDate={lastDate} />
     </div>
   );

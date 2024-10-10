@@ -30,10 +30,6 @@ class Command(BaseCommand):
                     if last_act
                     else datetime.datetime(2000, 1, 1)
                 )
-                last_date = datetime.datetime.now(
-                    datetime.timezone.utc
-                ) - datetime.timedelta(days=60)
-
                 print(f"Syncing {user.username} starting at {last_date}")
 
                 try:

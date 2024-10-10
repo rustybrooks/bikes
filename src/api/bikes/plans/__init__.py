@@ -1,5 +1,9 @@
+import logging
+
 from . import tcc as tccdata  # type: ignore
 from . import training_bible_v1 as tbv1data  # type: ignore
+
+logger = logging.getLogger(__name__)
 
 
 class TrainingPlan:

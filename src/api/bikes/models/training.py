@@ -101,16 +101,18 @@ class TrainingWeek(models.Model):
 
         return m.values()
 
-    def populate_entries(self, delete_first=False):
+    def populate_entries(self, delete_first=False, save=True):
         entry_by_orig = {}
-        if delete_first:
-            TrainingEntry.objects.filter(week=self).delete()
-        else:
-            saved_entries = TrainingEntry.objects.filter(week=self)
-            for entry in saved_entries:
-                entry_by_orig[entry.scheduled_dow] = entry
+        if save:
+            if delete_first:
+                TrainingEntry.objects.filter(week=self).delete()
+            else:
+                saved_entries = TrainingEntry.objects.filter(week=self)
+                for entry in saved_entries:
+                    entry_by_orig[entry.scheduled_dow] = entry
 
         tp = tp_from_season(self.season)
+        entries = []
         for e in tp.plan_entries(self):
             dow = e.pop("dow")
             if dow in entry_by_orig:
@@ -118,53 +120,23 @@ class TrainingWeek(models.Model):
             e["season"] = self.season
             e["week"] = self
             e["entry_date"] = self.week_start_date + datetime.timedelta(days=dow)
-            entry = TrainingEntry(**e)
-            entry.save()
+            entries.append(TrainingEntry(**e))
+
+        if save:
+            TrainingEntry.objects.bulk_create(entries)
+
+        return entries
 
     def is_this_week(self):
         today = datetime.date.today()
         return (
-            self.week_start_date <= today
-            and today < self.week_start_date + datetime.timedelta(days=7)
+            self.week_start_date
+            <= today
+            < self.week_start_date + datetime.timedelta(days=7)
         )
 
 
 class TrainingEntry(models.Model):
-    # NAME_CHOICES = (
-    #     ('E1', 'Recovery'),
-    #     ('E2', 'Aerobic'),
-    #     ('E3', 'Fixed Gear'),
-    #     ('F1', 'Moderate Hills'),
-    #     ('F2', 'Long Hills'),
-    #     ('F3', 'Steep Hills'),
-    #     ('S1', 'Spin-ups'),
-    #     ('S2', 'Isolated Leg'),
-    #     ('S3', 'Cornering'),
-    #     ('S4', 'Bumping'),
-    #     ('S5', 'Form Sprints'),
-    #     ('S6', 'Sprints'),
-    #     ('M1', 'Tempo'),
-    #     ('M2', 'Cruise Intervals'),
-    #     ('M3', 'Hill Cruise Intervals'),
-    #     ('M4', 'Motorpaced Cruise Intervals'),
-    #     ('M5', 'Criss-Cross Threshold'),
-    #     ('M6', 'Threshold'),
-    #     ('M7', 'Motorpaced Threshold'),
-    #     ('A1', 'Group Ride'),
-    #     ('A2', 'SE Intervals'),
-    #     ('A3', 'Pyramid Intervals'),
-    #     ('A4', 'Hill Intervals'),
-    #     ('A5', 'Lactate Tolerance Reps'),
-    #     ('A6', 'Hill Reps'),
-    #     ('P1', 'Jumps'),
-    #     ('P2', 'Hill Sprints'),
-    #     ('P3', 'Crit Sprints'),
-    #     ('T1', 'Aerobic Time Trial'),
-    #     ('T2', 'Time Trial'),
-    #     ('RACE', 'Race'),
-    #     ('OFF', 'Off'),
-    #     )
-
     entry_date = models.DateField()
     season = models.ForeignKey(
         "Season", unique_for_date="entry_date", on_delete=models.DO_NOTHING

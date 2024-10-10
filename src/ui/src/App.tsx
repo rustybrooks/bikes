@@ -1,10 +1,12 @@
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
+import '@mantine/dates/styles.css';
 import { Route, Routes } from 'react-router';
 import { AppShell, createTheme, MantineProvider, rem } from '@mantine/core';
 import { Header } from './components/Header';
 import { NavBar } from './components/NavBar';
 import { TrainingPlans } from './views/TrainingPlans';
+import { TrainingPlansManage } from './views/TrainingPlansManage';
 import { StravaCallback } from './views/StravaCallback';
 import { Home } from './views/Home';
 
@@ -169,6 +171,8 @@ export const App = () => {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/training" element={<TrainingPlans />} />
+              <Route path="/training/manage" element={<TrainingPlansManage />} />
+              <Route path="/training/manage/:command" element={<TrainingPlansManage />} />
               <Route path="/strava_callback" element={<StravaCallback />} />
               <Route element={<NoMatch />} />
             </Routes>

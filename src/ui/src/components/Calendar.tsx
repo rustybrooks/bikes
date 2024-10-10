@@ -33,11 +33,10 @@ type CalendarEntry = {
 export const Calendar = ({ activities, firstDate, lastDate }: { activities: ActivityOut[]; firstDate: DateTime; lastDate: DateTime }) => {
   const dow = ['Sat', 'Sun', 'Mon', 'Tues', 'Weds', 'Thurs', 'Fri'];
 
-  console.log(firstDate.toISO());
   const calendar: Record<string, CalendarEntry> = Object.fromEntries(
     Interval.fromDateTimes(firstDate.startOf('day'), lastDate.endOf('day'))
       .splitBy({ day: 1 })
-      .map((date: Interval) => [date.start.toISODate(), { activities: [] }]),
+      .map((date: Interval) => [(date.start || DateTime.now()).toISODate(), { activities: [] }]),
   );
 
   activities.forEach(activity => {
@@ -51,7 +50,7 @@ export const Calendar = ({ activities, firstDate, lastDate }: { activities: Acti
       <Grid columns={7}>
         {dow.map(d => {
           return (
-            <Grid.Col span={1}>
+            <Grid.Col span={1} key={d}>
               <Card key={d} className={classes.header}>
                 <Center>
                   <Text>{d}</Text>
@@ -62,15 +61,15 @@ export const Calendar = ({ activities, firstDate, lastDate }: { activities: Acti
         })}
 
         {Object.keys(calendar).map(date => (
-          <Grid.Col span={1}>
+          <Grid.Col span={1} key={date}>
             <Card key={date} className={classes.day} padding="xs">
               <Card.Section withBorder={false} inheritPadding py="xs">
                 <Text className={classes.date}>{date.split('-')[2]}</Text>
               </Card.Section>
               <Stack>
-                {(calendar[date].activities || []).map((act: any) => {
+                {(calendar[date].activities || []).map(act => {
                   return (
-                    <Card withBorder={true} key={act.id} padding="xs">
+                    <Card withBorder={true} key={act.activity_id} padding="xs">
                       <Card.Section>
                         <Box className={classes.exerciseheader}>
                           <Group gap="xs" justify="space-between" className={classes.exercisename}>
@@ -90,7 +89,7 @@ export const Calendar = ({ activities, firstDate, lastDate }: { activities: Acti
                         </Text>
 
                         <Text span size={'sm'}>
-                          {(3600 * act.average_speed * METER_TO_MILE).toFixed(1)}mph
+                          {(3600 * (act.average_speed || 0) * METER_TO_MILE).toFixed(1)}mph
                         </Text>
                       </Group>
                       <Group justify="space-between">

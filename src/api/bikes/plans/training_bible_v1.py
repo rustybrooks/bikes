@@ -687,7 +687,7 @@ annual_hours_lookup = {
         17.0,
     ],
     "Transition": [
-        3.1,
+        3.0,
         3.5,
         4.5,
         5.0,
