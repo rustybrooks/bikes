@@ -5,11 +5,11 @@ import { DateInput } from '@mantine/dates';
 import { DateTime } from 'luxon';
 import { apiFetch, apiUrl } from '../api/api-fetch';
 
-const fetchPreview = async (annual_hours: string, season_start_date: Date, season_end_date: Date) => {
+const fetchPreview = async (annual_hours: string, season_start_date: Date | null, season_end_date: Date | null) => {
   const body = JSON.stringify({
     annual_hours: Number(annual_hours),
-    season_start_date: DateTime.fromJSDate(season_start_date).toISODate(),
-    season_end_date: DateTime.fromJSDate(season_end_date).toISODate(),
+    season_start_date: season_start_date ? DateTime.fromJSDate(season_start_date).toISODate() : null,
+    season_end_date: season_end_date ? DateTime.fromJSDate(season_end_date).toISODate() : null,
   });
 
   apiFetch(apiUrl('SEASONS_CTB_PREVIEW')(), {
