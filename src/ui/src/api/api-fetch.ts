@@ -47,7 +47,7 @@ export const apiFetch = async <T>(url: string, options: Record<string, unknown>)
     throw new Error('An error occurred while fetching the data.');
   }
 
-  return res.json() as T;
+  return { data: (await res.json()) as T, response: res };
 };
 
 export const useUrl = <T>(

@@ -2,15 +2,16 @@ import { Button, Container, Paper, PasswordInput, Tabs, TextInput, Title } from 
 import { useState } from 'react';
 import { NavigateFunction, useNavigate } from 'react-router';
 import { apiFetch, apiUrl } from '../api/api-fetch';
+import { User } from '../api/DTOs';
 
 const login = async (navigate: NavigateFunction, username: string, password: string): Promise<string> => {
   try {
-    const resp = await apiFetch(apiUrl('USERS_LOGIN')(), {
+    const { response, data } = await apiFetch<User>(apiUrl('USERS_LOGIN')(), {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
-    if (resp.status === 403) {
-      return resp.details.detail;
+    if (response.status === 403) {
+      return (data as any).details.detail;
     }
     navigate('/');
   } catch (error) {
@@ -23,12 +24,12 @@ const login = async (navigate: NavigateFunction, username: string, password: str
 
 const signup = async (navigate: NavigateFunction, username: string, password: string, password2: string): Promise<string> => {
   try {
-    const resp = await apiFetch(apiUrl('USERS_SIGNUP')(), {
+    const { response, data } = await apiFetch<User>(apiUrl('USERS_SIGNUP')(), {
       method: 'POST',
       body: JSON.stringify({ username, password, password2 }),
     });
-    if (resp.status === 403) {
-      return resp.details.detail;
+    if (response.status === 403) {
+      return (data as any).details.detail;
     }
     navigate('/');
   } catch (error) {
