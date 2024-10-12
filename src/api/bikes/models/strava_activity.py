@@ -99,7 +99,6 @@ class StravaActivity(models.Model):
         from bikes.models import (
             StravaActivitySegmentEffort,
             StravaActivityStream,
-            StravaSegmentHistory,
             StravaSpeedCurve,  # type: ignore
         )
 
@@ -117,14 +116,12 @@ class StravaActivity(models.Model):
             f"Syncing strava activity id={activity['id']} start={activity['start_date']}"
         )
 
-        new = False
         if len(actlist):
             act = actlist[0]
         else:
             act = StravaActivity()
             act.activity_id = activity_id
             act.user = user
-            new = True
 
         for key in [
             "external_id",

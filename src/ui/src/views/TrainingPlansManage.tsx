@@ -1,18 +1,28 @@
 import { useNavigate, useParams } from 'react-router';
 import { Modal, NativeSelect } from '@mantine/core';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DateInput } from '@mantine/dates';
 import { DateTime } from 'luxon';
 import { apiFetch, apiUrl } from '../api/api-fetch';
+import { TrainingBiblePreviewOut, TrainingEntryOut } from '../api/DTOs';
+import { Calendar } from '../components/Calendar';
+import { calendarDateOffset } from '../utils/dates';
 
-const fetchPreview = async (annual_hours: string, season_start_date: Date | null, season_end_date: Date | null) => {
+const fixDate = (date: Date | null): Date | null => {
+  if (date === null) {
+    return null;
+  }
+  return calendarDateOffset(DateTime.fromJSDate(date), 0, -1).toJSDate();
+};
+
+const fetchPreview = async (annual_hours: number, season_start_date: Date | null, season_end_date: Date | null) => {
   const body = JSON.stringify({
-    annual_hours: Number(annual_hours),
+    annual_hours,
     season_start_date: season_start_date ? DateTime.fromJSDate(season_start_date).toISODate() : null,
     season_end_date: season_end_date ? DateTime.fromJSDate(season_end_date).toISODate() : null,
   });
 
-  apiFetch(apiUrl('SEASONS_CTB_PREVIEW')(), {
+  return apiFetch<TrainingBiblePreviewOut>(apiUrl('SEASONS_CTB_PREVIEW')(), {
     method: 'POST',
     body,
   });
@@ -21,33 +31,38 @@ const fetchPreview = async (annual_hours: string, season_start_date: Date | null
 export const TrainingPlanForm = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [yearlyHours, setYearlyHours] = useState<number>(200);
+  const [yearlyHourChoices, setYearlyHourChoices] = useState<number[]>([]);
+  const [entries, setEntries] = useState<TrainingEntryOut[]>([]);
 
-  console.log(endDate, startDate);
+  useEffect(() => {
+    const fetchData = async () => {
+      const data = await fetchPreview(yearlyHours, startDate, endDate);
+      setYearlyHourChoices(data.hour_selection);
+      setEntries(data.entries);
+    };
+
+    fetchData();
+  }, [startDate, endDate, yearlyHours]);
+
+  const firstDate = entries.map(e => DateTime.fromISO(e.entry_date)).sort()[0];
+  const lastDate = entries
+    .map(e => DateTime.fromISO(e.entry_date))
+    .sort()
+    .reverse()[0];
+
+  console.log({ firstDate, lastDate });
 
   return (
     <div>
-      <DateInput
-        clearable
-        value={startDate}
-        onChange={value => {
-          setStartDate(value);
-          fetchPreview('200', startDate, endDate);
-        }}
-        label="Date input"
-        placeholder="Date input"
+      <DateInput clearable value={startDate} onChange={date => setStartDate(fixDate(date))} label="Start date" placeholder="Start date" />
+      <DateInput clearable value={endDate} onChange={setEndDate} label="End date (optional)" placeholder="End date" />
+      <NativeSelect
+        label="Yearly Hours"
+        data={yearlyHourChoices.map(h => String(h))}
+        onChange={event => setYearlyHours(Number(event.currentTarget.value))}
       />
-      <DateInput
-        clearable
-        value={endDate}
-        onChange={value => {
-          setEndDate(value);
-          fetchPreview('200', startDate, endDate);
-        }}
-        label="Date input"
-        placeholder="Date input"
-      />
-      <NativeSelect label="Yearly Hours" data={['200']} />
-      {/* <Calendar /> */}
+      {firstDate && lastDate && <Calendar activities={[]} trainingEntries={entries} firstDate={firstDate} lastDate={lastDate} />}
     </div>
   );
 };
@@ -57,7 +72,7 @@ export const TrainingPlansManage = () => {
   const { command } = useParams();
   return (
     <div>
-      <Modal opened={command === 'add'} onClose={() => navigate('/training')} title="Create new Training Plan Season">
+      <Modal size="auto" opened={command === 'add'} onClose={() => navigate('/training')} title="Create new Training Plan Season">
         <TrainingPlanForm />
       </Modal>
     </div>

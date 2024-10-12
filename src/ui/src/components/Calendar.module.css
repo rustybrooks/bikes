@@ -5,11 +5,17 @@
 
 .day {
     height: 100%;
-    min-height: 8rem;
+    min-height: 3rem;
 }
 
 .date {
     text-align: right;
+    float: right
+}
+
+.workout {
+    float: left
+
 }
 
 .icon {

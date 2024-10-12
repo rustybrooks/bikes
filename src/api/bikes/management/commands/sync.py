@@ -42,6 +42,6 @@ class Command(BaseCommand):
                     logger.exception("Failed to retrieve activities")
 
             took = time.time() - t1
-            diff = (60 * 5) - took
+            diff = (60 * 10) - took
             print(f"sleeping {diff:0.1f} seconds (took {took:0.1f} seconds)")
             time.sleep(diff)

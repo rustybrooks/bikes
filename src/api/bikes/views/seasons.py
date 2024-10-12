@@ -1,6 +1,7 @@
 import datetime
 import logging
 
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import serializers  # type: ignore
 from rest_framework.decorators import action
@@ -33,10 +34,12 @@ class TrainingEntryOut(serializers.ModelSerializer):
         exclude: list[str] = []
         depth = 2
 
+    workout_types = serializers.DictField()
+
 
 class TrainingBiblePreviewOut(serializers.Serializer):
-    entries: list[TrainingEntryOut]
-    hour_selection: list[int]
+    entries = serializers.ListField(child=TrainingEntryOut())
+    hour_selection = serializers.ListField(child=serializers.IntegerField())
 
 
 class SeasonViewSet(ModelViewSet):
@@ -46,7 +49,7 @@ class SeasonViewSet(ModelViewSet):
 
     @swagger_auto_schema(
         request_body=TrainingBibleV1In,
-        responses={200: TrainingBiblePreviewOut(many=False)},
+        responses={200: openapi.Response("", TrainingBiblePreviewOut(many=False))},
     )
     @action(detail=False, methods=["post"])
     def preview_training_bible_v1(self, request: Request):
@@ -54,29 +57,39 @@ class SeasonViewSet(ModelViewSet):
         progression = ctb.progression()
 
         weeks: list[TrainingWeek] = []
-        start_date = datetime.date.fromisoformat(request.data["season_start_date"])
+        start_date = (
+            datetime.date.fromisoformat(request.data["season_start_date"])
+            if request.data["season_start_date"]
+            else None
+        )
         end_date = (
             datetime.date.fromisoformat(request.data["season_end_date"])
             if request.data["season_end_date"]
             else None
         )
+        logger.info("start=%r end=%r", start_date, end_date)
 
         season = Season(
             season_start_date=start_date,
             training_plan="CTB",
-            params={"annual_hours": 200},
+            params={"annual_hours": request.data["annual_hours"]},
         )
 
         entries = []
-        this_day = start_date
+        this_day = start_date or datetime.date.today()
         prog_index = 0
         prog_ct = 1
         week_prog = progression[prog_index]
-        while prog_index < len(progression) - 1:
+        while start_date:
             if prog_ct > week_prog[1]:
                 prog_ct = 1
-                if prog_index < len(progression) - 1:
-                    prog_index += 1
+                prog_index += 1
+
+            if prog_index >= len(progression):
+                break
+
+            if end_date and this_day > end_date:
+                break
 
             week_prog = progression[prog_index]
 
@@ -94,13 +107,14 @@ class SeasonViewSet(ModelViewSet):
             this_day = next_day
             prog_ct += 1
 
+        for to in entries:
+            to.workout_types = {
+                wt: ctb.workout_description(wt) for wt in to.workout_type_list()
+            }
+
         training_serialized = TrainingEntryOut(data=entries, many=True)
         training_serialized.is_valid()
         training_entries_data = training_serialized.data
-        for t, to in zip(training_entries_data, entries):
-            t["workout_types"] = [
-                {wt: ctb.workout_description(wt)} for wt in to.workout_type_list()
-            ]
 
         data = {
             "entries": training_entries_data,

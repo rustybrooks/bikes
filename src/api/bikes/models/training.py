@@ -8,8 +8,6 @@ from django.urls import reverse  # type: ignore
 
 from bikes import plans
 
-# from bikes import plans  # type: ignore
-
 logger = logging.getLogger(__name__)
 
 tpmap = {
@@ -29,20 +27,6 @@ def tp_from_season(s):
 
 
 class TrainingWeek(models.Model):
-    # WEEK_TYPE_CHOICES = (
-    #     ('Prep', 'Prep'),
-    #     ('Base 1', 'Base 1'),
-    #     ('Base 2', 'Base 2'),
-    #     ('Base 3', 'Base 3'),
-    #     ('Build 1', 'Build 1'),
-    #     ('Build 2', 'Build 2'),
-    #     ('Peak', 'Peak'),
-    #     ('RaceSat', 'Race Saturday'),
-    #     ('RaceSun', 'Race Sunday'),
-    #     ('RaceSatSun', 'Race Saturday and Sunday'),
-    #     ('Transition', 'Transition'),
-    # )
-
     week_start_date = models.DateField()
     season = models.ForeignKey(
         "Season",

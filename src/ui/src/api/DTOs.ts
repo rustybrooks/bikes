@@ -192,28 +192,173 @@ export interface TrainingBibleV1In {
   annual_hours: number;
 }
 
-export interface TrainingWeekOut {
+export interface TrainingEntryOut {
   /** ID */
   id?: number;
+  /** Workout types */
+  workout_types: Record<string, string | null>;
   /**
-   * Week start date
+   * Entry date
    * @format date
    */
-  week_start_date: string;
+  entry_date: string;
   /**
-   * Week type
+   * Workout type
    * @minLength 1
    * @maxLength 50
    */
-  week_type: string;
+  workout_type: string;
   /**
-   * Week type num
+   * Scheduled dow
    * @min -2147483648
    * @max 2147483647
    */
-  week_type_num: number;
-  /** Season */
-  season?: number | null;
+  scheduled_dow: number;
+  /** Scheduled length */
+  scheduled_length: number;
+  /** Scheduled length2 */
+  scheduled_length2: number;
+  /** Actual length */
+  actual_length: number;
+  /**
+   * Notes
+   * @minLength 1
+   * @maxLength 2000
+   */
+  notes: string;
+  season?: {
+    /** ID */
+    id?: number;
+    /** Training plan */
+    training_plan: 'CTB' | 'TCC';
+    /**
+     * Season start date
+     * @format date
+     */
+    season_start_date: string;
+    /**
+     * Season end date
+     * @format date
+     */
+    season_end_date: string;
+    /** Params */
+    params: object;
+    user?: {
+      /** ID */
+      id?: number;
+      /**
+       * Password
+       * @minLength 1
+       * @maxLength 128
+       */
+      password: string;
+      /**
+       * Last login
+       * @format date-time
+       */
+      last_login?: string | null;
+      /**
+       * Superuser status
+       * Designates that this user has all permissions without explicitly assigning them.
+       */
+      is_superuser?: boolean;
+      /**
+       * Username
+       * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+       * @minLength 1
+       * @maxLength 150
+       * @pattern ^[\w.@+-]+$
+       */
+      username: string;
+      /**
+       * First name
+       * @maxLength 150
+       */
+      first_name?: string;
+      /**
+       * Last name
+       * @maxLength 150
+       */
+      last_name?: string;
+      /**
+       * Email address
+       * @format email
+       * @maxLength 254
+       */
+      email?: string;
+      /**
+       * Staff status
+       * Designates whether the user can log into this admin site.
+       */
+      is_staff?: boolean;
+      /**
+       * Active
+       * Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+       */
+      is_active?: boolean;
+      /**
+       * Date joined
+       * @format date-time
+       */
+      date_joined?: string;
+      /**
+       * The groups this user belongs to. A user will get all permissions granted to each of their groups.
+       * @uniqueItems true
+       */
+      groups?: number[];
+      /**
+       * Specific permissions for this user.
+       * @uniqueItems true
+       */
+      user_permissions?: number[];
+    };
+  };
+  week?: {
+    /** ID */
+    id?: number;
+    /**
+     * Week start date
+     * @format date
+     */
+    week_start_date: string;
+    /**
+     * Week type
+     * @minLength 1
+     * @maxLength 50
+     */
+    week_type: string;
+    /**
+     * Week type num
+     * @min -2147483648
+     * @max 2147483647
+     */
+    week_type_num: number;
+    season?: {
+      /** ID */
+      id?: number;
+      /** Training plan */
+      training_plan: 'CTB' | 'TCC';
+      /**
+       * Season start date
+       * @format date
+       */
+      season_start_date: string;
+      /**
+       * Season end date
+       * @format date
+       */
+      season_end_date: string;
+      /** Params */
+      params: object;
+      /** User */
+      user: number;
+    };
+  };
+}
+
+export interface TrainingBiblePreviewOut {
+  entries: TrainingEntryOut[];
+  hour_selection: number[];
 }
 
 export interface User {
@@ -514,10 +659,195 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request GET:/activities/
      * @secure
      */
-    activitiesList: (params: RequestParams = {}) =>
-      this.request<ActivityOut[], any>({
+    activitiesList: (
+      query?: {
+        /** type */
+        type?: string;
+        /** trainer */
+        trainer?: string;
+        /** commute */
+        commute?: string;
+        /** manual */
+        manual?: string;
+        /** private */
+        private?: string;
+        /** flagged */
+        flagged?: string;
+        /** start_datetime */
+        start_datetime?: string;
+        /** start_datetime__gt */
+        start_datetime__gt?: string;
+        /** start_datetime__lt */
+        start_datetime__lt?: string;
+        /** start_datetime__gte */
+        start_datetime__gte?: string;
+        /** start_datetime__lte */
+        start_datetime__lte?: string;
+        /** start_datetime_local */
+        start_datetime_local?: string;
+        /** start_datetime_local__gt */
+        start_datetime_local__gt?: string;
+        /** start_datetime_local__lt */
+        start_datetime_local__lt?: string;
+        /** start_datetime_local__gte */
+        start_datetime_local__gte?: string;
+        /** start_datetime_local__lte */
+        start_datetime_local__lte?: string;
+        /** moving_time */
+        moving_time?: string;
+        /** moving_time__gt */
+        moving_time__gt?: string;
+        /** moving_time__lt */
+        moving_time__lt?: string;
+        /** moving_time__gte */
+        moving_time__gte?: string;
+        /** moving_time__lte */
+        moving_time__lte?: string;
+        /** elapsed_time */
+        elapsed_time?: string;
+        /** elapsed_time__gt */
+        elapsed_time__gt?: string;
+        /** elapsed_time__lt */
+        elapsed_time__lt?: string;
+        /** elapsed_time__gte */
+        elapsed_time__gte?: string;
+        /** elapsed_time__lte */
+        elapsed_time__lte?: string;
+        /** total_elevation_gain */
+        total_elevation_gain?: string;
+        /** total_elevation_gain__gt */
+        total_elevation_gain__gt?: string;
+        /** total_elevation_gain__lt */
+        total_elevation_gain__lt?: string;
+        /** total_elevation_gain__gte */
+        total_elevation_gain__gte?: string;
+        /** total_elevation_gain__lte */
+        total_elevation_gain__lte?: string;
+        /** achievement_count */
+        achievement_count?: string;
+        /** achievement_count__gt */
+        achievement_count__gt?: string;
+        /** achievement_count__lt */
+        achievement_count__lt?: string;
+        /** achievement_count__gte */
+        achievement_count__gte?: string;
+        /** achievement_count__lte */
+        achievement_count__lte?: string;
+        /** average_speed */
+        average_speed?: string;
+        /** average_speed__gt */
+        average_speed__gt?: string;
+        /** average_speed__lt */
+        average_speed__lt?: string;
+        /** average_speed__gte */
+        average_speed__gte?: string;
+        /** average_speed__lte */
+        average_speed__lte?: string;
+        /** max_speed */
+        max_speed?: string;
+        /** max_speed__gt */
+        max_speed__gt?: string;
+        /** max_speed__lt */
+        max_speed__lt?: string;
+        /** max_speed__gte */
+        max_speed__gte?: string;
+        /** max_speed__lte */
+        max_speed__lte?: string;
+        /** average_watts */
+        average_watts?: string;
+        /** average_watts__gt */
+        average_watts__gt?: string;
+        /** average_watts__lt */
+        average_watts__lt?: string;
+        /** average_watts__gte */
+        average_watts__gte?: string;
+        /** average_watts__lte */
+        average_watts__lte?: string;
+        /** max_watts */
+        max_watts?: string;
+        /** max_watts__gt */
+        max_watts__gt?: string;
+        /** max_watts__lt */
+        max_watts__lt?: string;
+        /** max_watts__gte */
+        max_watts__gte?: string;
+        /** max_watts__lte */
+        max_watts__lte?: string;
+        /** weighted_average_watts */
+        weighted_average_watts?: string;
+        /** weighted_average_watts__gt */
+        weighted_average_watts__gt?: string;
+        /** weighted_average_watts__lt */
+        weighted_average_watts__lt?: string;
+        /** weighted_average_watts__gte */
+        weighted_average_watts__gte?: string;
+        /** weighted_average_watts__lte */
+        weighted_average_watts__lte?: string;
+        /** kilojoules */
+        kilojoules?: string;
+        /** kilojoules__gt */
+        kilojoules__gt?: string;
+        /** kilojoules__lt */
+        kilojoules__lt?: string;
+        /** kilojoules__gte */
+        kilojoules__gte?: string;
+        /** kilojoules__lte */
+        kilojoules__lte?: string;
+        /** average_heartrate */
+        average_heartrate?: string;
+        /** average_heartrate__gt */
+        average_heartrate__gt?: string;
+        /** average_heartrate__lt */
+        average_heartrate__lt?: string;
+        /** average_heartrate__gte */
+        average_heartrate__gte?: string;
+        /** average_heartrate__lte */
+        average_heartrate__lte?: string;
+        /** max_heartrate */
+        max_heartrate?: string;
+        /** max_heartrate__gt */
+        max_heartrate__gt?: string;
+        /** max_heartrate__lt */
+        max_heartrate__lt?: string;
+        /** max_heartrate__gte */
+        max_heartrate__gte?: string;
+        /** max_heartrate__lte */
+        max_heartrate__lte?: string;
+        /** suffer_score */
+        suffer_score?: string;
+        /** suffer_score__gt */
+        suffer_score__gt?: string;
+        /** suffer_score__lt */
+        suffer_score__lt?: string;
+        /** suffer_score__gte */
+        suffer_score__gte?: string;
+        /** suffer_score__lte */
+        suffer_score__lte?: string;
+        /** A search term. */
+        search?: string;
+        /** Which field to use when ordering the results. */
+        ordering?: string;
+        /** Number of results to return per page. */
+        limit?: number;
+        /** The initial index from which to return the results. */
+        offset?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          count: number;
+          /** @format uri */
+          next?: string | null;
+          /** @format uri */
+          previous?: string | null;
+          results: ActivityOut[];
+        },
+        any
+      >({
         path: `/activities/`,
         method: 'GET',
+        query: query,
         secure: true,
         format: 'json',
         ...params,
@@ -549,10 +879,33 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request GET:/seasons/
      * @secure
      */
-    seasonsList: (params: RequestParams = {}) =>
-      this.request<Season[], any>({
+    seasonsList: (
+      query?: {
+        /** A search term. */
+        search?: string;
+        /** Which field to use when ordering the results. */
+        ordering?: string;
+        /** Number of results to return per page. */
+        limit?: number;
+        /** The initial index from which to return the results. */
+        offset?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          count: number;
+          /** @format uri */
+          next?: string | null;
+          /** @format uri */
+          previous?: string | null;
+          results: Season[];
+        },
+        any
+      >({
         path: `/seasons/`,
         method: 'GET',
+        query: query,
         secure: true,
         format: 'json',
         ...params,
@@ -585,7 +938,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @secure
      */
     seasonsPreviewTrainingBibleV1: (data: TrainingBibleV1In, params: RequestParams = {}) =>
-      this.request<TrainingWeekOut[], any>({
+      this.request<TrainingBiblePreviewOut, any>({
         path: `/seasons/preview_training_bible_v1/`,
         method: 'POST',
         body: data,
@@ -673,10 +1026,33 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request GET:/users/
      * @secure
      */
-    usersList: (params: RequestParams = {}) =>
-      this.request<User[], any>({
+    usersList: (
+      query?: {
+        /** A search term. */
+        search?: string;
+        /** Which field to use when ordering the results. */
+        ordering?: string;
+        /** Number of results to return per page. */
+        limit?: number;
+        /** The initial index from which to return the results. */
+        offset?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          count: number;
+          /** @format uri */
+          next?: string | null;
+          /** @format uri */
+          previous?: string | null;
+          results: User[];
+        },
+        any
+      >({
         path: `/users/`,
         method: 'GET',
+        query: query,
         secure: true,
         format: 'json',
         ...params,
@@ -747,10 +1123,33 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request GET:/users/strava_connect/
      * @secure
      */
-    usersStravaConnect: (params: RequestParams = {}) =>
-      this.request<User[], any>({
+    usersStravaConnect: (
+      query?: {
+        /** A search term. */
+        search?: string;
+        /** Which field to use when ordering the results. */
+        ordering?: string;
+        /** Number of results to return per page. */
+        limit?: number;
+        /** The initial index from which to return the results. */
+        offset?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          count: number;
+          /** @format uri */
+          next?: string | null;
+          /** @format uri */
+          previous?: string | null;
+          results: User[];
+        },
+        any
+      >({
         path: `/users/strava_connect/`,
         method: 'GET',
+        query: query,
         secure: true,
         format: 'json',
         ...params,

@@ -27,7 +27,7 @@ export const apiUrl = (apiRoute: keyof typeof apiRoutes) => {
   return (...args: any[]) => `${BASE_URL}/${apiRoutes[apiRoute](...args)}`;
 };
 
-export const apiFetch = async (url: string, options: Record<string, unknown>) => {
+export const apiFetch = async <T>(url: string, options: Record<string, unknown>) => {
   // const tokens: UserTokens | null = JSON.parse(localStorage.getItem(userStorageKey) || '{}');
 
   const headers = {
@@ -47,7 +47,7 @@ export const apiFetch = async (url: string, options: Record<string, unknown>) =>
     throw new Error('An error occurred while fetching the data.');
   }
 
-  return res.json();
+  return res.json() as T;
 };
 
 export const useUrl = <T>(
@@ -55,14 +55,14 @@ export const useUrl = <T>(
   key: string | object | null = null,
   options: Record<string, unknown> = {},
 ): {
-  data: T;
+  data: T | undefined;
   isLoading: boolean;
   isError: boolean;
-  mutate: KeyedMutator<unknown>;
+  mutate: KeyedMutator<T>;
   isUnauthenticated: boolean;
 } => {
   // console.log('useUrl', { url, key, options });
-  const { data, error, mutate } = useSWR([url, key || ''], () => apiFetch(url, options), {
+  const { data, error, mutate } = useSWR([url, key || ''], () => apiFetch<T>(url, options), {
     revalidateOnFocus: false,
     revalidateIfStale: false,
   });
