@@ -41,13 +41,13 @@ export const apiFetch = async <T>(url: string, options: Record<string, unknown>)
     headers,
   });
   if (!res.ok) {
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 403) {
       throw new UnauthenticatedError('Unauthenticated');
     }
     throw new Error('An error occurred while fetching the data.');
   }
 
-  return { data: (await res.json()) as T, response: res };
+  return (await res.json()) as T;
 };
 
 export const useUrl = <T>(

@@ -6,13 +6,10 @@ import { User } from '../api/DTOs';
 
 const login = async (navigate: NavigateFunction, username: string, password: string): Promise<string> => {
   try {
-    const { response, data } = await apiFetch<User>(apiUrl('USERS_LOGIN')(), {
+    await apiFetch<User>(apiUrl('USERS_LOGIN')(), {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
-    if (response.status === 403) {
-      return (data as any).details.detail;
-    }
     navigate('/');
   } catch (error) {
     console.log(error);
@@ -24,13 +21,10 @@ const login = async (navigate: NavigateFunction, username: string, password: str
 
 const signup = async (navigate: NavigateFunction, username: string, password: string, password2: string): Promise<string> => {
   try {
-    const { response, data } = await apiFetch<User>(apiUrl('USERS_SIGNUP')(), {
+    await apiFetch<User>(apiUrl('USERS_SIGNUP')(), {
       method: 'POST',
       body: JSON.stringify({ username, password, password2 }),
     });
-    if (response.status === 403) {
-      return (data as any).details.detail;
-    }
     navigate('/');
   } catch (error) {
     console.log(error);
