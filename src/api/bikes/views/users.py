@@ -57,6 +57,10 @@ class LoginUserSerializer(serializers.Serializer):
     password = serializers.CharField()
 
 
+class StravaCallBackSerializer(serializers.Serializer):
+    code = serializers.CharField
+
+
 class UserViewSet(
     mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet
 ):
@@ -102,6 +106,9 @@ class UserViewSet(
         authorize_url = stravaapi.redirect_token()
         return HttpResponseRedirect(redirect_to=authorize_url)
 
+    @swagger_auto_schema(
+        request_body=StravaCallBackSerializer, responses={200: UserSerializer}
+    )
     @action(detail=False, methods=["post"], permission_classes=[IsAuthenticated])
     def strava_callback(self, request: Request, **kwargs):
         logger.info("user=%r kwargs=%r", request.user, kwargs)

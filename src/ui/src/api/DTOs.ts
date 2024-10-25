@@ -436,6 +436,8 @@ export interface SignupUser {
   password2: string;
 }
 
+export type StravaCallBack = object;
+
 export type QueryParamsType = Record<string | number, any>;
 export type ResponseFormat = keyof Omit<Body, 'body' | 'bodyUsed'>;
 
@@ -1104,7 +1106,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      * @request POST:/users/strava_callback/
      * @secure
      */
-    usersStravaCallback: (data: User, params: RequestParams = {}) =>
+    usersStravaCallback: (data: StravaCallBack, params: RequestParams = {}) =>
       this.request<User, any>({
         path: `/users/strava_callback/`,
         method: 'POST',

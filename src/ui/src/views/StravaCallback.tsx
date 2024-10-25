@@ -1,14 +1,11 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { apiFetch, apiUrl } from '../api/api-fetch';
+import { api } from '../api/api-fetch';
 
 const callback = async (code: string | null) => {
   const body = JSON.stringify({ code });
   console.log('body!', { body });
-  const resp = await apiFetch(apiUrl('USERS_STRAVA_CALLBACK')(), {
-    method: 'POST',
-    body,
-  });
+  const resp = await api.users.usersStravaCallback({ code });
 
   console.log('resp', { resp });
 };

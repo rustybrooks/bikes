@@ -1,15 +1,11 @@
 import { Button, Container, Paper, PasswordInput, Tabs, TextInput, Title } from '@mantine/core';
 import { useState } from 'react';
 import { NavigateFunction, useNavigate } from 'react-router';
-import { apiFetch, apiUrl } from '../api/api-fetch';
-import { User } from '../api/DTOs';
+import { api } from '../api/api-fetch';
 
 const login = async (navigate: NavigateFunction, username: string, password: string): Promise<string> => {
   try {
-    await apiFetch<User>(apiUrl('USERS_LOGIN')(), {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    });
+    await api.users.usersLogin({ username, password });
     navigate('/');
   } catch (error) {
     console.log(error);
@@ -21,10 +17,8 @@ const login = async (navigate: NavigateFunction, username: string, password: str
 
 const signup = async (navigate: NavigateFunction, username: string, password: string, password2: string): Promise<string> => {
   try {
-    await apiFetch<User>(apiUrl('USERS_SIGNUP')(), {
-      method: 'POST',
-      body: JSON.stringify({ username, password, password2 }),
-    });
+    await api.users.usersSignup({ username, password, password2 });
+
     navigate('/');
   } catch (error) {
     console.log(error);

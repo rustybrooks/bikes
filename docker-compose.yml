@@ -44,8 +44,8 @@ services:
     container_name: bikedb
     entrypoint: ./manage.py sync
     ports: !reset []
-    profiles:
-      - manual
+    # profiles:
+    #   - manual
     depends_on:
       db:
         condition: service_healthy

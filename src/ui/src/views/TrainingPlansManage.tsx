@@ -3,10 +3,10 @@ import { Modal, NativeSelect } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { DateInput } from '@mantine/dates';
 import { DateTime } from 'luxon';
-import { apiFetch, apiUrl } from '../api/api-fetch';
-import { TrainingBiblePreviewOut, TrainingEntryOut } from '../api/DTOs';
+import { TrainingEntryOut } from '../api/DTOs';
 import { Calendar } from '../components/Calendar';
 import { calendarDateOffset } from '../utils/dates';
+import { api } from '../api/api-fetch';
 
 const fixDate = (date: Date | null): Date | null => {
   if (date === null) {
@@ -16,15 +16,10 @@ const fixDate = (date: Date | null): Date | null => {
 };
 
 const fetchPreview = async (annual_hours: number, season_start_date: Date | null, season_end_date: Date | null) => {
-  const body = JSON.stringify({
+  return api.seasons.seasonsPreviewTrainingBibleV1({
     annual_hours,
-    season_start_date: season_start_date ? DateTime.fromJSDate(season_start_date).toISODate() : null,
-    season_end_date: season_end_date ? DateTime.fromJSDate(season_end_date).toISODate() : null,
-  });
-
-  return apiFetch<TrainingBiblePreviewOut>(apiUrl('SEASONS_CTB_PREVIEW')(), {
-    method: 'POST',
-    body,
+    season_start_date: season_start_date ? DateTime.fromJSDate(season_start_date).toISODate() : '',
+    season_end_date: season_end_date ? DateTime.fromJSDate(season_end_date).toISODate() : '',
   });
 };
 
@@ -37,7 +32,7 @@ export const TrainingPlanForm = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const data = await fetchPreview(yearlyHours, startDate, endDate);
+      const { data } = await fetchPreview(yearlyHours, startDate, endDate);
       setYearlyHourChoices(data.hour_selection);
       setEntries(data.entries);
     };
