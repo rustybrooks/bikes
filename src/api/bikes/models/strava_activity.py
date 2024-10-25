@@ -126,7 +126,6 @@ class StravaActivity(models.Model):
         for key in [
             "external_id",
             "upload_id",
-            "activity_name",
             "distance",
             "moving_time",
             "elapsed_time",
@@ -162,6 +161,7 @@ class StravaActivity(models.Model):
 
         act.athlete_id = activity["athlete"]["id"]
 
+        act.activity_name = activity["name"]
         act.start_datetime = activity["start_date"]
         act.start_datetime_local = activity["start_date_local"]
 

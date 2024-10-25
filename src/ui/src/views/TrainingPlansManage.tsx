@@ -18,8 +18,8 @@ const fixDate = (date: Date | null): Date | null => {
 const fetchPreview = async (annual_hours: number, season_start_date: Date | null, season_end_date: Date | null) => {
   return api.seasons.seasonsPreviewTrainingBibleV1({
     annual_hours,
-    season_start_date: season_start_date ? DateTime.fromJSDate(season_start_date).toISODate() : '',
-    season_end_date: season_end_date ? DateTime.fromJSDate(season_end_date).toISODate() : '',
+    season_start_date: season_start_date ? DateTime.fromJSDate(season_start_date).toISODate() || '' : '',
+    season_end_date: season_end_date ? DateTime.fromJSDate(season_end_date).toISODate() || '' : '',
   });
 };
 

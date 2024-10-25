@@ -35,6 +35,7 @@ class TCC(TrainingPlan):
                 dict(
                     dow=dow,
                     workout_type=wotype,
+                    activity_type="Ride",  # FIXME if we add other types
                     scheduled_dow=dow_ind,
                     scheduled_length=tccdata.workout_details[self.params["type"]][
                         week.week_type
@@ -108,6 +109,7 @@ class CTBv1(TrainingPlan):
                 dict(
                     dow=dow,
                     workout_type=wotype,
+                    activity_type="Ride",  # FIXME if we add other types
                     scheduled_dow=dow_ind,
                     scheduled_length=week_hours[hpatterns[dow_ind] - 1],
                     actual_length=week_hours[hpatterns[dow_ind] - 1],

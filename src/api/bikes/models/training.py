@@ -127,6 +127,7 @@ class TrainingEntry(models.Model):
     )
     week = models.ForeignKey(TrainingWeek, on_delete=models.DO_NOTHING)
     workout_type = models.CharField(max_length=50)  # , choices=NAME_CHOICES
+    activity_type = models.CharField(max_length=50)
     scheduled_dow = models.IntegerField()
     scheduled_length = models.FloatField()
     scheduled_length2 = models.FloatField()

@@ -9,8 +9,8 @@ export const Home = () => {
   const [firstDate] = useState(calendarDateOffset(DateTime.now(), -28, -1));
   const [lastDate] = useState(calendarDateOffset(DateTime.now(), 0, 1).plus({ days: -1 }));
   const { data: activityData, isLoading } = useActivitiesList({
-    start_datetime_local__gte: firstDate.toISO(),
-    start_datetime_local__lte: lastDate.toISO(),
+    ...(firstDate ? { start_datetime_local__gte: firstDate.toISO() || '' } : null),
+    ...(lastDate ? { start_datetime_local__lte: lastDate.toISO() || '' } : null),
   });
 
   return (

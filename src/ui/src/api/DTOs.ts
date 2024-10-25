@@ -209,6 +209,12 @@ export interface TrainingEntryOut {
    */
   workout_type: string;
   /**
+   * Activity type
+   * @minLength 1
+   * @maxLength 50
+   */
+  activity_type: string;
+  /**
    * Scheduled dow
    * @min -2147483648
    * @max 2147483647
