@@ -79,6 +79,9 @@ class StravaSegmentHistory(models.Model):
     def sync_all(cls, user, athlete_id):
         import time
 
+        from bikes.libs import stravaapi
+        from bikes.models import StravaSegment
+
         segments = StravaSegment.objects.filter()
         for s in segments:
             try:

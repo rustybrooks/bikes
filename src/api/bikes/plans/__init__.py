@@ -12,7 +12,8 @@ class TrainingPlan:
 
 
 class TCC(TrainingPlan):
-    def progression(self):
+    @classmethod
+    def progression(cls):
         return tccdata.progression
 
     def plan_entries(self, week):
@@ -51,21 +52,25 @@ class TCC(TrainingPlan):
 
         return entries
 
-    def weekly_hours(self, week):
+    @classmethod
+    def weekly_hours(cls, _week):
         # pass
         return 7
 
-    def workout_description(self, wo_type):
+    @classmethod
+    def workout_description(cls, _wo_type):
         return "temp"
 
-    def workout_types(self, entry):
+    @classmethod
+    def workout_types(cls, entry):
         key = "%s" % (entry.week.week_type,)
         patterns = tccdata.workout_patterns[key]
         return patterns[entry.scheduled_dow]
 
 
 class CTBv1(TrainingPlan):
-    def progression(self):
+    @classmethod
+    def progression(cls):
         return tbv1data.progresssion
 
     def weekly_hours(self, week):
@@ -81,7 +86,8 @@ class CTBv1(TrainingPlan):
 
         return hours
 
-    def plan_entries(self, week):
+    @classmethod
+    def plan_entries(cls, week):
         try:
             key = "%s-%s" % (week.week_type, week.week_type_num)
             patterns = tbv1data.workout_patterns[key]
@@ -112,16 +118,19 @@ class CTBv1(TrainingPlan):
                     activity_type="Ride",  # FIXME if we add other types
                     scheduled_dow=dow_ind,
                     scheduled_length=week_hours[hpatterns[dow_ind] - 1],
+                    scheduled_length2=0,
                     actual_length=week_hours[hpatterns[dow_ind] - 1],
                 )
             )
 
         return entries
 
-    def workout_description(self, wo_type):
+    @classmethod
+    def workout_description(cls, wo_type):
         return tbv1data.workouts[wo_type]
 
-    def workout_types(self, entry):
+    @classmethod
+    def workout_types(cls, entry):
         try:
             key = "%s-%s" % (entry.week.week_type, entry.week.week_type_num)
             patterns = tbv1data.workout_patterns[key]

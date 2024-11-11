@@ -243,10 +243,10 @@ class StravaActivity(models.Model):
             StravaSpeedCurve,  # type: ignore
         )
 
-        all = cls.objects.filter()
+        all_activities = cls.objects.filter()
 
         updated = 0
-        for activity in all:
+        for activity in all_activities:
             streams1 = StravaPowerCurve.objects.filter(activity=activity)
             streams2 = StravaSpeedCurve.objects.filter(activity=activity)
             if len(streams1) and len(streams2):

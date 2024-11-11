@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router';
-import { Modal, NativeSelect } from '@mantine/core';
+import { Button, NativeSelect, Stack } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { DateInput } from '@mantine/dates';
 import { DateTime } from 'luxon';
@@ -7,6 +7,7 @@ import { TrainingEntryOut } from '../api/DTOs';
 import { Calendar } from '../components/Calendar';
 import { calendarDateOffset } from '../utils/dates';
 import { api } from '../api/api-fetch';
+import { FixedModal } from '../components/FixedModal';
 
 const fixDate = (date: Date | null): Date | null => {
   if (date === null) {
@@ -17,28 +18,31 @@ const fixDate = (date: Date | null): Date | null => {
 
 const fetchPreview = async (annual_hours: number, season_start_date: Date | null, season_end_date: Date | null) => {
   return api.seasons.seasonsPreviewTrainingBibleV1({
-    annual_hours,
-    season_start_date: season_start_date ? DateTime.fromJSDate(season_start_date).toISODate() || '' : '',
-    season_end_date: season_end_date ? DateTime.fromJSDate(season_end_date).toISODate() || '' : '',
+    params: { annual_hours },
+    season_start_date: season_start_date ? DateTime.fromJSDate(season_start_date).toISODate() || null : null,
+    season_end_date: season_end_date ? DateTime.fromJSDate(season_end_date).toISODate() || null : null,
   });
 };
 
 export const TrainingPlanForm = () => {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
-  const [yearlyHours, setYearlyHours] = useState<number>(200);
-  const [yearlyHourChoices, setYearlyHourChoices] = useState<number[]>([]);
+  const [annualHours, setAnnualHours] = useState<number>(200);
+  const [annualHourChoices, setAnnualHourChoices] = useState<number[]>([]);
   const [entries, setEntries] = useState<TrainingEntryOut[]>([]);
+  const [saving, setSaving] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data } = await fetchPreview(yearlyHours, startDate, endDate);
-      setYearlyHourChoices(data.hour_selection);
+      const { data } = await fetchPreview(annualHours, startDate, endDate);
+      setAnnualHourChoices(data.hour_selection);
       setEntries(data.entries);
     };
 
-    fetchData();
-  }, [startDate, endDate, yearlyHours]);
+    if (startDate) {
+      fetchData().then(_ => {});
+    }
+  }, [startDate, endDate, annualHours]);
 
   const firstDate = entries.map(e => DateTime.fromISO(e.entry_date)).sort()[0];
   const lastDate = entries
@@ -49,27 +53,46 @@ export const TrainingPlanForm = () => {
   console.log({ firstDate, lastDate });
 
   return (
-    <div>
+    <Stack>
       <DateInput clearable value={startDate} onChange={date => setStartDate(fixDate(date))} label="Start date" placeholder="Start date" />
       <DateInput clearable value={endDate} onChange={setEndDate} label="End date (optional)" placeholder="End date" />
       <NativeSelect
         label="Yearly Hours"
-        data={yearlyHourChoices.map(h => String(h))}
-        onChange={event => setYearlyHours(Number(event.currentTarget.value))}
+        data={annualHourChoices.map(h => String(h))}
+        onChange={event => setAnnualHours(Number(event.currentTarget.value))}
       />
-      {firstDate && lastDate && <Calendar activities={[]} trainingEntries={entries} firstDate={firstDate} lastDate={lastDate} />}
-    </div>
+      <Button
+        disabled={!entries || entries.length === 0 || saving}
+        onClick={async () => {
+          setSaving(true);
+          try {
+            await api.trainingWeeks.trainingWeeksPopulate({
+              season_start_date: firstDate.toISODate() || null,
+              season_end_date: lastDate.toISODate() || null,
+              training_plan: 'CTB',
+              params: { annual_hours: annualHours },
+            });
+          } catch (e) {
+            console.error(e);
+          }
+          setSaving(false);
+        }}
+      >
+        Save plan
+      </Button>
+      <br />
+      {entries && entries.length > 0 && <Calendar activities={[]} trainingEntries={entries} firstDate={firstDate} lastDate={lastDate} />}
+    </Stack>
   );
 };
 
 export const TrainingPlansManage = () => {
   const navigate = useNavigate();
   const { command } = useParams();
+
   return (
-    <div>
-      <Modal size="auto" opened={command === 'add'} onClose={() => navigate('/training')} title="Create new Training Plan Season">
-        <TrainingPlanForm />
-      </Modal>
-    </div>
+    <FixedModal size="auto" opened={command === 'add'} onClose={() => navigate('/training')} title="Create new Training Plan Season">
+      <TrainingPlanForm />
+    </FixedModal>
   );
 };

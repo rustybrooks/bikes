@@ -182,21 +182,21 @@ export interface TrainingBibleV1In {
    * Season start date
    * @format date
    */
-  season_start_date: string;
+  season_start_date?: string | null;
   /**
    * Season end date
    * @format date
    */
-  season_end_date: string;
-  /** Annual hours */
-  annual_hours: number;
+  season_end_date?: string | null;
+  /** Params */
+  params: object;
 }
 
 export interface TrainingEntryOut {
   /** ID */
   id?: number;
   /** Workout types */
-  workout_types: Record<string, string | null>;
+  workout_types?: object;
   /**
    * Entry date
    * @format date
@@ -232,139 +232,59 @@ export interface TrainingEntryOut {
    * @maxLength 2000
    */
   notes: string;
-  season?: {
-    /** ID */
-    id?: number;
-    /** Training plan */
-    training_plan: 'CTB' | 'TCC';
-    /**
-     * Season start date
-     * @format date
-     */
-    season_start_date: string;
-    /**
-     * Season end date
-     * @format date
-     */
-    season_end_date: string;
-    /** Params */
-    params: object;
-    user?: {
-      /** ID */
-      id?: number;
-      /**
-       * Password
-       * @minLength 1
-       * @maxLength 128
-       */
-      password: string;
-      /**
-       * Last login
-       * @format date-time
-       */
-      last_login?: string | null;
-      /**
-       * Superuser status
-       * Designates that this user has all permissions without explicitly assigning them.
-       */
-      is_superuser?: boolean;
-      /**
-       * Username
-       * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
-       * @minLength 1
-       * @maxLength 150
-       * @pattern ^[\w.@+-]+$
-       */
-      username: string;
-      /**
-       * First name
-       * @maxLength 150
-       */
-      first_name?: string;
-      /**
-       * Last name
-       * @maxLength 150
-       */
-      last_name?: string;
-      /**
-       * Email address
-       * @format email
-       * @maxLength 254
-       */
-      email?: string;
-      /**
-       * Staff status
-       * Designates whether the user can log into this admin site.
-       */
-      is_staff?: boolean;
-      /**
-       * Active
-       * Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
-       */
-      is_active?: boolean;
-      /**
-       * Date joined
-       * @format date-time
-       */
-      date_joined?: string;
-      /**
-       * The groups this user belongs to. A user will get all permissions granted to each of their groups.
-       * @uniqueItems true
-       */
-      groups?: number[];
-      /**
-       * Specific permissions for this user.
-       * @uniqueItems true
-       */
-      user_permissions?: number[];
-    };
-  };
-  week?: {
-    /** ID */
-    id?: number;
-    /**
-     * Week start date
-     * @format date
-     */
-    week_start_date: string;
-    /**
-     * Week type
-     * @minLength 1
-     * @maxLength 50
-     */
-    week_type: string;
-    /**
-     * Week type num
-     * @min -2147483648
-     * @max 2147483647
-     */
-    week_type_num: number;
-    season?: {
-      /** ID */
-      id?: number;
-      /** Training plan */
-      training_plan: 'CTB' | 'TCC';
-      /**
-       * Season start date
-       * @format date
-       */
-      season_start_date: string;
-      /**
-       * Season end date
-       * @format date
-       */
-      season_end_date: string;
-      /** Params */
-      params: object;
-      /** User */
-      user: number;
-    };
-  };
+  /** Season */
+  season: number;
+  /** Week */
+  week: number;
 }
 
 export interface TrainingBiblePreviewOut {
   entries: TrainingEntryOut[];
   hour_selection: number[];
+}
+
+export interface TrainingWeekOut {
+  /** ID */
+  id?: number;
+  /**
+   * Week start date
+   * @format date
+   */
+  week_start_date: string;
+  /**
+   * Week type
+   * @minLength 1
+   * @maxLength 50
+   */
+  week_type: string;
+  /**
+   * Week type num
+   * @min -2147483648
+   * @max 2147483647
+   */
+  week_type_num: number;
+  /** Season */
+  season?: number | null;
+}
+
+export interface TrainingWeekPopulateIn {
+  /**
+   * Season start date
+   * @format date
+   */
+  season_start_date?: string | null;
+  /**
+   * Season end date
+   * @format date
+   */
+  season_end_date?: string | null;
+  /**
+   * Training plan
+   * @minLength 1
+   */
+  training_plan: string;
+  /** Params */
+  params: object;
 }
 
 export interface User {
@@ -1020,6 +940,313 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
     seasonsDelete: (id: number, params: RequestParams = {}) =>
       this.request<void, any>({
         path: `/seasons/${id}/`,
+        method: 'DELETE',
+        secure: true,
+        ...params,
+      }),
+  };
+  trainingEntries = {
+    /**
+     * No description
+     *
+     * @tags training_entries
+     * @name TrainingEntriesList
+     * @request GET:/training_entries/
+     * @secure
+     */
+    trainingEntriesList: (
+      query?: {
+        /** week__id */
+        week__id?: string;
+        /** workout_type */
+        workout_type?: string;
+        /** activity_type */
+        activity_type?: string;
+        /** scheduled_dow */
+        scheduled_dow?: string;
+        /** scheduled_length */
+        scheduled_length?: string;
+        /** actual_length */
+        actual_length?: string;
+        /** week__week_start_date */
+        week__week_start_date?: string;
+        /** week__week_start_date__gt */
+        week__week_start_date__gt?: string;
+        /** week__week_start_date__lt */
+        week__week_start_date__lt?: string;
+        /** week__week_start_date__gte */
+        week__week_start_date__gte?: string;
+        /** week__week_start_date__lte */
+        week__week_start_date__lte?: string;
+        /** A search term. */
+        search?: string;
+        /** Which field to use when ordering the results. */
+        ordering?: string;
+        /** Number of results to return per page. */
+        limit?: number;
+        /** The initial index from which to return the results. */
+        offset?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          count: number;
+          /** @format uri */
+          next?: string | null;
+          /** @format uri */
+          previous?: string | null;
+          results: TrainingEntryOut[];
+        },
+        any
+      >({
+        path: `/training_entries/`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_entries
+     * @name TrainingEntriesCreate
+     * @request POST:/training_entries/
+     * @secure
+     */
+    trainingEntriesCreate: (data: TrainingEntryOut, params: RequestParams = {}) =>
+      this.request<TrainingEntryOut, any>({
+        path: `/training_entries/`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_entries
+     * @name TrainingEntriesRead
+     * @request GET:/training_entries/{id}/
+     * @secure
+     */
+    trainingEntriesRead: (id: number, params: RequestParams = {}) =>
+      this.request<TrainingEntryOut, any>({
+        path: `/training_entries/${id}/`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_entries
+     * @name TrainingEntriesUpdate
+     * @request PUT:/training_entries/{id}/
+     * @secure
+     */
+    trainingEntriesUpdate: (id: number, data: TrainingEntryOut, params: RequestParams = {}) =>
+      this.request<TrainingEntryOut, any>({
+        path: `/training_entries/${id}/`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_entries
+     * @name TrainingEntriesPartialUpdate
+     * @request PATCH:/training_entries/{id}/
+     * @secure
+     */
+    trainingEntriesPartialUpdate: (id: number, data: TrainingEntryOut, params: RequestParams = {}) =>
+      this.request<TrainingEntryOut, any>({
+        path: `/training_entries/${id}/`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_entries
+     * @name TrainingEntriesDelete
+     * @request DELETE:/training_entries/{id}/
+     * @secure
+     */
+    trainingEntriesDelete: (id: number, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/training_entries/${id}/`,
+        method: 'DELETE',
+        secure: true,
+        ...params,
+      }),
+  };
+  trainingWeeks = {
+    /**
+     * No description
+     *
+     * @tags training_weeks
+     * @name TrainingWeeksList
+     * @request GET:/training_weeks/
+     * @secure
+     */
+    trainingWeeksList: (
+      query?: {
+        /** week_start_date */
+        week_start_date?: string;
+        /** week_start_date__gt */
+        week_start_date__gt?: string;
+        /** week_start_date__lt */
+        week_start_date__lt?: string;
+        /** week_start_date__gte */
+        week_start_date__gte?: string;
+        /** week_start_date__lte */
+        week_start_date__lte?: string;
+        /** A search term. */
+        search?: string;
+        /** Which field to use when ordering the results. */
+        ordering?: string;
+        /** Number of results to return per page. */
+        limit?: number;
+        /** The initial index from which to return the results. */
+        offset?: number;
+      },
+      params: RequestParams = {},
+    ) =>
+      this.request<
+        {
+          count: number;
+          /** @format uri */
+          next?: string | null;
+          /** @format uri */
+          previous?: string | null;
+          results: TrainingWeekOut[];
+        },
+        any
+      >({
+        path: `/training_weeks/`,
+        method: 'GET',
+        query: query,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_weeks
+     * @name TrainingWeeksCreate
+     * @request POST:/training_weeks/
+     * @secure
+     */
+    trainingWeeksCreate: (data: TrainingWeekOut, params: RequestParams = {}) =>
+      this.request<TrainingWeekOut, any>({
+        path: `/training_weeks/`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_weeks
+     * @name TrainingWeeksPopulate
+     * @request POST:/training_weeks/populate/
+     * @secure
+     */
+    trainingWeeksPopulate: (data: TrainingWeekPopulateIn, params: RequestParams = {}) =>
+      this.request<TrainingWeekOut, any>({
+        path: `/training_weeks/populate/`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_weeks
+     * @name TrainingWeeksRead
+     * @request GET:/training_weeks/{id}/
+     * @secure
+     */
+    trainingWeeksRead: (id: number, params: RequestParams = {}) =>
+      this.request<TrainingWeekOut, any>({
+        path: `/training_weeks/${id}/`,
+        method: 'GET',
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_weeks
+     * @name TrainingWeeksUpdate
+     * @request PUT:/training_weeks/{id}/
+     * @secure
+     */
+    trainingWeeksUpdate: (id: number, data: TrainingWeekOut, params: RequestParams = {}) =>
+      this.request<TrainingWeekOut, any>({
+        path: `/training_weeks/${id}/`,
+        method: 'PUT',
+        body: data,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_weeks
+     * @name TrainingWeeksPartialUpdate
+     * @request PATCH:/training_weeks/{id}/
+     * @secure
+     */
+    trainingWeeksPartialUpdate: (id: number, data: TrainingWeekOut, params: RequestParams = {}) =>
+      this.request<TrainingWeekOut, any>({
+        path: `/training_weeks/${id}/`,
+        method: 'PATCH',
+        body: data,
+        secure: true,
+        format: 'json',
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags training_weeks
+     * @name TrainingWeeksDelete
+     * @request DELETE:/training_weeks/{id}/
+     * @secure
+     */
+    trainingWeeksDelete: (id: number, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/training_weeks/${id}/`,
         method: 'DELETE',
         secure: true,
         ...params,

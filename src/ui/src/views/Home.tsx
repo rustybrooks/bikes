@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LoadingOverlay } from '@mantine/core';
 import { DateTime } from 'luxon';
-import { useActivitiesList } from '../api/api-fetch';
+import { useActivitiesList, useTrainingEntriesList, useTrainingWeeksList } from '../api/api-fetch';
 import { Calendar } from '../components/Calendar';
 import { calendarDateOffset } from '../utils/dates';
 
@@ -12,11 +12,20 @@ export const Home = () => {
     ...(firstDate ? { start_datetime_local__gte: firstDate.toISO() || '' } : null),
     ...(lastDate ? { start_datetime_local__lte: lastDate.toISO() || '' } : null),
   });
+  const { data: entriesData, isLoading: isLoading2 } = useTrainingEntriesList({
+    ...(firstDate ? { week__week_start_date__gte: firstDate.toISODate() || '' } : null),
+    ...(lastDate ? { week__week_start_date__lte: lastDate.toISODate() || '' } : null),
+  });
 
   return (
     <div>
-      <LoadingOverlay visible={isLoading} zIndex={1000} overlayProps={{ radius: 'sm', blur: 2 }} />
-      <Calendar activities={activityData?.results || []} trainingEntries={[]} firstDate={firstDate} lastDate={lastDate} />
+      <LoadingOverlay visible={isLoading || isLoading2} zIndex={1000} overlayProps={{ radius: 'sm', blur: 2 }} />
+      <Calendar
+        activities={activityData?.results || []}
+        trainingEntries={entriesData?.results || []}
+        firstDate={firstDate}
+        lastDate={lastDate}
+      />
     </div>
   );
 };

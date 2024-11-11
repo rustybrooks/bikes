@@ -1,5 +1,10 @@
+import datetime
+from typing import Optional
+
 from django.contrib.auth.models import User
 from django.db import models
+
+from bikes.plans import CTBv1
 
 
 class Season(models.Model):
@@ -58,6 +63,62 @@ class Season(models.Model):
         }
 
         return int(self.ftp_watts * zones[zone])
+
+    @staticmethod
+    def generate_weeks(
+        user: Optional[User],
+        season_start_date: datetime.date,
+        season_end_date: datetime.date,
+        params,
+    ):
+        from bikes.models import TrainingWeek
+
+        ctb = CTBv1(params)
+        progression = ctb.progression()
+
+        weeks: list[TrainingWeek] = []
+
+        season = Season(
+            user=user,
+            season_start_date=season_start_date,
+            season_end_date=season_end_date,
+            training_plan="CTB",
+            params=params,
+        )
+
+        entries = []
+        this_day = season_start_date or datetime.date.today()
+        prog_index = 0
+        prog_ct = 1
+        week_prog = progression[prog_index]
+        while season_start_date:
+            if prog_ct > week_prog[1]:
+                prog_ct = 1
+                prog_index += 1
+
+            if prog_index >= len(progression):
+                break
+
+            if season_end_date and this_day > season_end_date:
+                break
+
+            week_prog = progression[prog_index]
+
+            w = TrainingWeek(
+                season=season,
+                week_start_date=this_day,
+                week_type=week_prog[0],
+                week_type_num=prog_ct,
+            )
+            entries.extend(w.populate_entries(save=False))
+            weeks.append(w)
+
+            next_day = this_day + datetime.timedelta(days=7)
+
+            this_day = next_day
+            prog_ct += 1
+
+        return [season, weeks, entries]
 
     # def entries(self):
     #     entries = []

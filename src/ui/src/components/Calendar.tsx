@@ -1,4 +1,4 @@
-import { Box, Card, Center, Grid, Group, LoadingOverlay, Stack, Text } from '@mantine/core';
+import { Box, Card, Center, Grid, Group, HoverCard, LoadingOverlay, Stack, Text } from '@mantine/core';
 import { IconBike, IconDeviceUnknown, IconRun, IconWalk } from '@tabler/icons-react';
 import { DateTime, Interval } from 'luxon';
 
@@ -65,23 +65,23 @@ export const ActivityCard = ({ activity }: { activity: ActivityOut }) => {
   );
 };
 
-export const TrainingCard = ({ entry }: { entry: TrainingEntryOut }) => {
-  return (
-    <Card withBorder={true} padding="xs">
-      <Card.Section>
-        <Box className={classes.exerciseheader}>
-          <Group gap="xs" justify="space-between" className={classes.exercisename}>
-            <Text size="sm" truncate="end">
-              {entry.workout_type}&nbsp;
-            </Text>
-          </Group>
-        </Box>
-      </Card.Section>
-
-      <Group justify="space-between"></Group>
-    </Card>
-  );
-};
+// export const TrainingCard = ({ entry }: { entry: TrainingEntryOut }) => {
+//   return (
+//     <Card withBorder={true} padding="xs">
+//       <Card.Section>
+//         <Box className={classes.exerciseheader}>
+//           <Group gap="xs" justify="space-between" className={classes.exercisename}>
+//             <Text size="sm" truncate="end">
+//               {entry.workout_type}&nbsp;
+//             </Text>
+//           </Group>
+//         </Box>
+//       </Card.Section>
+//
+//       <Group justify="space-between"></Group>
+//     </Card>
+//   );
+// };
 
 export const WeekSummaryCard = ({ dates, calendar }: { dates: string[]; calendar: Record<string, CalendarEntry> }) => {
   const weeklyActivityHours: Record<string, number> = {};
@@ -121,6 +121,20 @@ export const WeekSummaryCard = ({ dates, calendar }: { dates: string[]; calendar
           })}
         </Stack>
       </Card.Section>
+    </Card>
+  );
+};
+
+export const TrainingEntryCard = ({ entry }: { entry: TrainingEntryOut }) => {
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-expect-error
+  const details = entry.workout_types[entry.workout_type] || [];
+  return (
+    <Card>
+      <Text>
+        <b>{details[0]}</b>
+      </Text>
+      <Text>{details[1]}</Text>
     </Card>
   );
 };
@@ -186,34 +200,47 @@ export const Calendar = ({
           </Card>
         </Grid.Col>
 
-        {weekChunks.map(week => {
+        {weekChunks.map((week, wi) => {
           return [
-            ...week.map(date => (
-              <Grid.Col span={1} key={date}>
-                <Card key={date} className={classes.day} padding="xs">
-                  <Card.Section withBorder={false} inheritPadding py="xs">
-                    <Box>
-                      {(calendar[date].trainingEntries || []).map(entry => (
-                        <Text span className="workout" size={'sm'}>
-                          {entry.workout_type} | {entry.scheduled_length}
-                        </Text>
+            ...week.map((date, di) => {
+              const ld = DateTime.fromISO(date);
+              return (
+                <Grid.Col span={1} key={date}>
+                  <Card key={date} className={classes.day} padding="xs">
+                    <Card.Section withBorder={false} inheritPadding py="xs">
+                      <Box>
+                        {(calendar[date].trainingEntries || []).map(entry => (
+                          <HoverCard width={400} position="bottom" withArrow shadow="md" openDelay={250}>
+                            <HoverCard.Target>
+                              <Text span className="workout" size={'sm'}>
+                                {entry.workout_type} | {entry.scheduled_length}
+                              </Text>
+                            </HoverCard.Target>
+                            <HoverCard.Dropdown>
+                              <TrainingEntryCard entry={entry} />
+                            </HoverCard.Dropdown>
+                          </HoverCard>
+                        ))}
+                        <span className={classes.date}>
+                          {(wi === 0 && di === 0) || ld.day === 1 ? (
+                            <Text c="#999" span>
+                              {ld.monthShort}
+                            </Text>
+                          ) : null}
+                          &nbsp;
+                          <Text span>{date.split('-')[2]}</Text>
+                        </span>
+                      </Box>
+                    </Card.Section>
+                    <Stack>
+                      {(calendar[date].activities || []).map(act => (
+                        <ActivityCard activity={act} key={act.activity_id} />
                       ))}
-                      <Text span className={classes.date}>
-                        {date.split('-')[2]}
-                      </Text>
-                    </Box>
-                  </Card.Section>
-                  <Stack>
-                    {/* {(calendar[date].trainingEntries || []).map(entry => ( */}
-                    {/*  <TrainingCard entry={entry} key={entry.id} /> */}
-                    {/* ))} */}
-                    {(calendar[date].activities || []).map(act => (
-                      <ActivityCard activity={act} key={act.activity_id} />
-                    ))}
-                  </Stack>
-                </Card>
-              </Grid.Col>
-            )),
+                    </Stack>
+                  </Card>
+                </Grid.Col>
+              );
+            }),
             <Grid.Col span={1} key="summary">
               <WeekSummaryCard dates={week} calendar={calendar} key={week[0]} />
             </Grid.Col>,

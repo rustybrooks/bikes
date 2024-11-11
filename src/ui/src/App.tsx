@@ -167,16 +167,14 @@ export const App = () => {
           <NavBar />
         </AppShell.Navbar>
         <AppShell.Main>
-          <div>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/training" element={<TrainingPlans />} />
-              <Route path="/training/manage" element={<TrainingPlansManage />} />
-              <Route path="/training/manage/:command" element={<TrainingPlansManage />} />
-              <Route path="/strava_callback" element={<StravaCallback />} />
-              <Route element={<NoMatch />} />
-            </Routes>
-          </div>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/training" element={<TrainingPlans />} />
+            <Route path="/training/manage" element={<TrainingPlansManage />} />
+            <Route path="/training/manage/:command" element={<TrainingPlansManage />} />
+            <Route path="/strava_callback" element={<StravaCallback />} />
+            <Route element={<NoMatch />} />
+          </Routes>
         </AppShell.Main>
       </AppShell>
     </MantineProvider>

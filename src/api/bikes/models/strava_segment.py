@@ -34,9 +34,11 @@ class StravaSegment(models.Model):
 
     @classmethod
     def sync_one(cls, segment):
-        id = segment["id"]
-        segs = StravaSegment.objects.filter(segment_id=id)
-        seg: Self = cast(Self, segs[0] if len(segs) else StravaSegment(segment_id=id))
+        segment_id = segment["id"]
+        segs = StravaSegment.objects.filter(segment_id=segment_id)
+        seg: Self = cast(
+            Self, segs[0] if len(segs) else StravaSegment(segment_id=segment_id)
+        )
 
         for key in [
             "resource_state",

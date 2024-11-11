@@ -75,3 +75,5 @@ export const createUseUrl = <
 
 export const useActivitiesList = createUseUrl(api.activities.activitiesList);
 export const useSeasonsList = createUseUrl(api.seasons.seasonsList);
+export const useTrainingEntriesList = createUseUrl(api.trainingEntries.trainingEntriesList);
+export const useTrainingWeeksList = createUseUrl(api.trainingWeeks.trainingWeeksList);

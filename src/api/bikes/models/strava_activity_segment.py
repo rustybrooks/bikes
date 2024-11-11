@@ -33,13 +33,13 @@ class StravaActivitySegmentEffort(models.Model):
 
         # logger.info("sync one segment effort id=%r", segment["id"])
 
-        id = segment["id"]
-        segs = cls.objects.filter(activity_segment_id=id)
+        segment_id = segment["id"]
+        segs = cls.objects.filter(activity_segment_id=segment_id)
         if len(segs):
             sege = segs[0]
         else:
             sege = StravaActivitySegmentEffort()
-            sege.activity_segment_id = id
+            sege.activity_segment_id = segment_id
 
         sege.activity = activity
         sege.start_datetime = segment.get("start_date")

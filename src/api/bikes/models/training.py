@@ -17,12 +17,6 @@ tpmap = {
 
 
 def tp_from_season(s):
-    # logger.error(
-    #     "tp_from_season - season = %r, params = %r, tp = %r",
-    #     s,
-    #     s.params,
-    #     s.training_plan,
-    # )
     return tpmap[s.training_plan](s.params)
 
 
@@ -42,8 +36,7 @@ class TrainingWeek(models.Model):
         return "%s:%s-%s" % (self.week_start_date, self.week_type, self.week_type_num)
 
     def json(self, cal):
-        output: dict[str, Any] = {}
-        output["entries"] = []
+        output: dict[str, Any] = {"entries": []}
         for elist in cal.entries_by_week(self):
             output["entries"].append([e.json() for e in elist])
 
@@ -126,7 +119,7 @@ class TrainingEntry(models.Model):
         "Season", unique_for_date="entry_date", on_delete=models.DO_NOTHING
     )
     week = models.ForeignKey(TrainingWeek, on_delete=models.DO_NOTHING)
-    workout_type = models.CharField(max_length=50)  # , choices=NAME_CHOICES
+    workout_type = models.CharField(max_length=50)
     activity_type = models.CharField(max_length=50)
     scheduled_dow = models.IntegerField()
     scheduled_length = models.FloatField()
@@ -136,23 +129,6 @@ class TrainingEntry(models.Model):
 
     def __unicode__(self):
         return "%s" % (self.entry_date,)
-
-    def json(self):
-        output = {}
-
-        for el in (
-            "id",
-            "entry_date",
-            "workout_type",
-            "scheduled_dow",
-            "scheduled_length",
-            "actual_length",
-        ):
-            output[el] = getattr(self, el)
-
-        output["workout_types"] = self.workout_type_list()
-
-        return output
 
     def workout_type_list(self):
         tp = tp_from_season(self.season)
