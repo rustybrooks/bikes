@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LoadingOverlay } from '@mantine/core';
 import { DateTime } from 'luxon';
-import { useActivitiesList, useTrainingEntriesList, useTrainingWeeksList } from '../api/api-fetch';
+import { useActivitiesList, useTrainingEntriesList } from '../api/api-fetch';
 import { Calendar } from '../components/Calendar';
 import { calendarDateOffset } from '../utils/dates';
 
