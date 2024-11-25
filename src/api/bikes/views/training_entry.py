@@ -21,7 +21,7 @@ class TrainingEntryOut(serializers.ModelSerializer):
 
 
 class TrainingEntryViewSet(ModelViewSet):
-    queryset = TrainingEntry.objects.all()
+    queryset = TrainingEntry.objects.all().select_related("week", "season")
     serializer_class = TrainingEntryOut
     permission_classes = [IsAuthenticated]
 

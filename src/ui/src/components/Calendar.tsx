@@ -1,12 +1,12 @@
 import { Box, Card, Center, Grid, Group, HoverCard, LoadingOverlay, Stack, Text } from '@mantine/core';
-import { IconBike, IconDeviceUnknown, IconRun, IconWalk } from '@tabler/icons-react';
+import { IconBike, IconDeviceUnknown, IconRun, IconWalk, IconReceipt } from '@tabler/icons-react';
 import { DateTime, Interval } from 'luxon';
 
+import { Link } from 'react-router-dom';
 import classes from './Calendar.module.css';
 import { ActivityOut, TrainingEntryOut } from '../api/DTOs';
 import { chunkArray } from '../utils/arrays';
-
-const METER_TO_MILE = 0.6 / 1000;
+import { METER_TO_MILE } from '../constants/metrics';
 
 const formatSecondsTime = (sec: number): string => {
   const date = new Date(0);
@@ -22,6 +22,8 @@ const actIcon = (type: string, color = 'white') => {
       return <IconWalk stroke={1.5} size="1rem" style={{ color }} />;
     case 'Run':
       return <IconRun stroke={1.5} size="1rem" style={{ color }} />;
+    case 'total':
+      return <IconReceipt stroke={1.5} size="1rem" style={{ color }} />;
     default:
       return <IconDeviceUnknown stroke={1.5} size="1rem" style={{ color }} />;
   }
@@ -37,10 +39,17 @@ export const ActivityCard = ({ activity }: { activity: ActivityOut }) => {
     <Card withBorder={true} padding="xs">
       <Card.Section>
         <Box className={classes.exerciseheader}>
-          <Group gap="xs" justify="space-between" className={classes.exercisename}>
-            <Text size="sm">{(activity.distance * METER_TO_MILE).toFixed(1)}mi</Text>
-            {actIcon(activity.type, 'white')}
-          </Group>
+          <Link to={`activity/${activity.activity_id}`} style={{ color: 'white' }}>
+            <Group gap="5px" justify="space-between" className={classes.exercisename}>
+              <Text size="sm">{(activity.distance * METER_TO_MILE).toFixed(1)}mi</Text>
+              <Box w={70}>
+                <Text size="xs" truncate>
+                  {activity.activity_name}
+                </Text>
+              </Box>
+              {actIcon(activity.type, 'white')}
+            </Group>
+          </Link>
         </Box>
       </Card.Section>
 
@@ -65,34 +74,17 @@ export const ActivityCard = ({ activity }: { activity: ActivityOut }) => {
   );
 };
 
-// export const TrainingCard = ({ entry }: { entry: TrainingEntryOut }) => {
-//   return (
-//     <Card withBorder={true} padding="xs">
-//       <Card.Section>
-//         <Box className={classes.exerciseheader}>
-//           <Group gap="xs" justify="space-between" className={classes.exercisename}>
-//             <Text size="sm" truncate="end">
-//               {entry.workout_type}&nbsp;
-//             </Text>
-//           </Group>
-//         </Box>
-//       </Card.Section>
-//
-//       <Group justify="space-between"></Group>
-//     </Card>
-//   );
-// };
-
 export const WeekSummaryCard = ({ dates, calendar }: { dates: string[]; calendar: Record<string, CalendarEntry> }) => {
-  const weeklyActivityHours: Record<string, number> = {};
-  const weeklyTrainingHours: Record<string, number> = {};
+  const weeklyActivityHours: Record<string, number> = { total: 0 };
+  const weeklyTrainingHours: Record<string, number> = { total: 0 };
   dates.forEach(date => {
     calendar[date].activities.forEach(activity => {
       if (!(activity.type in weeklyActivityHours)) {
         weeklyActivityHours[activity.type] = 0;
       }
 
-      weeklyActivityHours[activity.type] += activity.moving_time;
+      weeklyActivityHours[activity.type] += activity.moving_time / 3600;
+      weeklyActivityHours.total += activity.moving_time / 3600;
     });
 
     calendar[date].trainingEntries.forEach(activity => {
@@ -100,6 +92,7 @@ export const WeekSummaryCard = ({ dates, calendar }: { dates: string[]; calendar
         weeklyTrainingHours[activity.activity_type] = 0;
       }
       weeklyTrainingHours[activity.activity_type] += activity.scheduled_length;
+      weeklyTrainingHours.total += activity.scheduled_length;
     });
   });
 
@@ -114,7 +107,7 @@ export const WeekSummaryCard = ({ dates, calendar }: { dates: string[]; calendar
               <Group key={key}>
                 {actIcon(key, 'black')}
                 <Text span size="sm">
-                  {((weeklyActivityHours[key] || 0) / 3600).toFixed(1)} / {((weeklyTrainingHours[key] || 0) / 3600).toFixed(1)}
+                  {(weeklyActivityHours[key] || 0).toFixed(1)} / {(weeklyTrainingHours[key] || 0).toFixed(1)}
                 </Text>
               </Group>
             );
@@ -210,7 +203,7 @@ export const Calendar = ({
                     <Card.Section withBorder={false} inheritPadding py="xs">
                       <Box>
                         {(calendar[date].trainingEntries || []).map(entry => (
-                          <HoverCard width={400} position="bottom" withArrow shadow="md" openDelay={250}>
+                          <HoverCard key={entry.id} width={400} position="bottom" withArrow shadow="md" openDelay={250}>
                             <HoverCard.Target>
                               <Text span className="workout" size={'sm'}>
                                 {entry.workout_type} | {entry.scheduled_length}

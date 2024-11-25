@@ -1,0 +1,3 @@
+export const KILOMETER_TO_MILE = 0.621371;
+export const METER_TO_MILE = KILOMETER_TO_MILE / 1000;
+export const METER_TO_FOOT = 3.28084;
