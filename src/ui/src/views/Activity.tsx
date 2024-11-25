@@ -2,7 +2,7 @@ import { useParams } from 'react-router';
 import { Box, Card, Code, Group, LoadingOverlay, NumberFormatter, Stack, Table, Text } from '@mantine/core';
 import { DateTime, Duration, Settings } from 'luxon';
 import { useActivityRead } from '../api/api-fetch';
-import { KILOMETER_TO_MILE, METER_TO_FOOT, METER_TO_MILE } from '../constants/metrics';
+import { METER_TO_FOOT, METER_TO_MILE } from '../constants/metrics';
 
 export const Activity = () => {
   const { id: activityId } = useParams();
