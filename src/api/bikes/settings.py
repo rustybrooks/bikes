@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     # "django.contrib.messages",
     "django.contrib.staticfiles",
     "health_check",  # required
-    "health_check.db",  # stock Django health checkers
+    # "health_check.db",  # stock Django health checkers
     # 'health_check.cache',
     # 'health_check.storage',
     "health_check.contrib.migrations",
@@ -225,3 +225,7 @@ STATIC_ROOT = "/tmp/static/"
 # SECURE_SSL_REDIRECT = True
 # SESSION_COOKIE_SECURE = True
 # SECURE_HSTS_SECONDS = 60
+
+# do I want this stuff
+# CONN_MAX_AGE = 300
+# CONN_HEALTH_CHECKS = True
