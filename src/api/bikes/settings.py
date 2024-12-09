@@ -227,5 +227,5 @@ STATIC_ROOT = "/tmp/static/"
 # SECURE_HSTS_SECONDS = 60
 
 # do I want this stuff
-# CONN_MAX_AGE = 300
+CONN_MAX_AGE = 300 - 30
 # CONN_HEALTH_CHECKS = True
