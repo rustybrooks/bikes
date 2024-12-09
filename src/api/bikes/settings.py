@@ -109,6 +109,7 @@ DATABASES = {
         "HOST": os.getenv("DB_HOST"),
         "PORT": 5432,
         "OPTIONS": {"application_name": "bikes"},
+        "CONN_MAX_AGE": 300 - 30,
     },
     "readonly": {
         "ENGINE": "psqlextra.backend",
@@ -226,7 +227,3 @@ STATIC_ROOT = "/tmp/static/"
 # SECURE_SSL_REDIRECT = True
 # SESSION_COOKIE_SECURE = True
 # SECURE_HSTS_SECONDS = 60
-
-# do I want this stuff
-CONN_MAX_AGE = 300 - 30
-# CONN_HEALTH_CHECKS = True
