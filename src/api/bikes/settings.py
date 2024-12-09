@@ -56,7 +56,7 @@ INSTALLED_APPS = [
     # "health_check.db",  # stock Django health checkers
     # 'health_check.cache',
     # 'health_check.storage',
-    "health_check.contrib.migrations",
+    # "health_check.contrib.migrations",
     "health_check.contrib.psutil",  # disk and memory utilization; requires psutil
     "django_extensions",
     "corsheaders",
