@@ -11,6 +11,10 @@ from bikes.models import StravaActivity  # type: ignore
 logger = logging.getLogger(__name__)
 
 
+# interval = (60 * 10)
+interval = 60 * 60 * 24
+
+
 class Command(BaseCommand):
     def add_arguments(self, parser):
         pass
@@ -42,6 +46,6 @@ class Command(BaseCommand):
                     logger.exception("Failed to retrieve activities")
 
             took = time.time() - t1
-            diff = (60 * 10) - took
+            diff = interval - took
             print(f"sleeping {diff:0.1f} seconds (took {took:0.1f} seconds)")
             time.sleep(diff)
