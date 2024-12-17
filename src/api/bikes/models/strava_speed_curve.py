@@ -25,7 +25,7 @@ class StravaSpeedCurve(models.Model):
         tm = numpy.array([a[0] for a in data])
         distw = x[length:] - x[:-length]
         tmw = tm[length:] - tm[:-length]
-        speed = distw / tmw
+        speed = 0 if tmw == 0 else distw / tmw
         return max(speed)
 
     @classmethod

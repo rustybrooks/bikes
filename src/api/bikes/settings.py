@@ -110,6 +110,7 @@ DATABASES = {
         "PORT": 5432,
         "OPTIONS": {"application_name": "bikes"},
         "CONN_MAX_AGE": 300 - 30,
+        "CONN_HEALTH_CHECKS": True,
     },
     "readonly": {
         "ENGINE": "psqlextra.backend",
@@ -118,6 +119,9 @@ DATABASES = {
         "PASSWORD": os.getenv("DB_PASSWORD_READONLY"),
         "HOST": os.getenv("DB_HOST_READONLY"),
         "PORT": 5432,
+        "OPTIONS": {"application_name": "bikes"},
+        "CONN_MAX_AGE": 300 - 30,
+        "CONN_HEALTH_CHECKS": True,
     },
 }
 
