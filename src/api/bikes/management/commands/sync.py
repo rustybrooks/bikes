@@ -2,6 +2,7 @@ import datetime
 import logging
 import time
 
+import django.db
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
@@ -26,6 +27,7 @@ class Command(BaseCommand):
         while True:
             try:
                 t1 = time.time()
+                django.db.close_old_connections()
                 for user in User.objects.all():
                     last_act = (
                         StravaActivity.objects.filter(user=user)
@@ -59,6 +61,7 @@ class Command(BaseCommand):
                 outcomes.append(1)
                 if sum(outcomes[-10:]) >= 10:
                     logger.error("10 exceptions in a row, bailing")
+                    break
 
                 time.sleep(30)
 
