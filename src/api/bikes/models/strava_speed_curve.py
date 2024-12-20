@@ -21,11 +21,13 @@ class StravaSpeedCurve(models.Model):
         if length >= len(data):
             return 0
 
-        x = numpy.array([a[2] for a in data])
-        tm = numpy.array([a[0] for a in data])
+        x = numpy.array([a[2] for a in data], dtype=float)
+        tm = numpy.array([a[0] for a in data], dtype=float)
         distw = x[length:] - x[:-length]
         tmw = tm[length:] - tm[:-length]
-        speed = 0 if tmw == 0 else distw / tmw
+        # speed = distw / tmw
+        speed = numpy.divide(distw, tmw, out=numpy.zeros_like(distw), where=tmw != 0)
+
         return max(speed)
 
     @classmethod
