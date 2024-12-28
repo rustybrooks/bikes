@@ -5,6 +5,7 @@ from django.urls import include, path, re_path  # type: ignore
 from rest_framework.routers import SimpleRouter  # type: ignore
 
 from bikes.views.activity import ActivitiesViewSet  # type: ignore
+from bikes.views.graphs import GraphsViewSet
 from bikes.views.season import SeasonViewSet  # type: ignore
 from bikes.views.swagger import SwaggerView  # type: ignore
 from bikes.views.training_entry import TrainingEntryViewSet
@@ -18,6 +19,7 @@ router.register(r"api/activities", ActivitiesViewSet, basename="activity")
 router.register(
     r"api/training_entries", TrainingEntryViewSet, basename="training_entry"
 )
+router.register(r"api/graphs", GraphsViewSet, basename="graphs")
 router.register(r"api/training_weeks", TrainingWeekViewSet, basename="training_week")
 
 urlpatterns = [

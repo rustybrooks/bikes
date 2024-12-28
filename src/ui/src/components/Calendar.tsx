@@ -1,5 +1,5 @@
 import { Box, Card, Center, Grid, Group, HoverCard, LoadingOverlay, Stack, Text } from '@mantine/core';
-import { IconBike, IconDeviceUnknown, IconRun, IconWalk, IconReceipt } from '@tabler/icons-react';
+import { IconDeviceUnknown, IconRun, IconWalk, IconReceipt } from '@tabler/icons-react';
 import { DateTime, Interval } from 'luxon';
 
 import { Link } from 'react-router-dom';
@@ -7,6 +7,7 @@ import classes from './Calendar.module.css';
 import { ActivityOut, TrainingEntryOut } from '../api/DTOs';
 import { chunkArray } from '../utils/arrays';
 import { METER_TO_MILE } from '../constants/metrics';
+import { icons } from '../constants/icons';
 
 const formatSecondsTime = (sec: number): string => {
   const date = new Date(0);
@@ -17,11 +18,11 @@ const formatSecondsTime = (sec: number): string => {
 const actIcon = (type: string, color = 'white') => {
   switch (type) {
     case 'Ride':
-      return <IconBike stroke={1.5} size="1rem" style={{ color }} />;
+      return <icons.ride stroke={1.5} size="1rem" style={{ color }} />;
     case 'Walk':
-      return <IconWalk stroke={1.5} size="1rem" style={{ color }} />;
+      return <icons.walk stroke={1.5} size="1rem" style={{ color }} />;
     case 'Run':
-      return <IconRun stroke={1.5} size="1rem" style={{ color }} />;
+      return <icons.run stroke={1.5} size="1rem" style={{ color }} />;
     case 'total':
       return <IconReceipt stroke={1.5} size="1rem" style={{ color }} />;
     default:

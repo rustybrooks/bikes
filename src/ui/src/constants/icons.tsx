@@ -1,12 +1,16 @@
 import {
+  IconBike,
   IconBrightnessFilled,
   IconCalendar,
-  IconChartAreaLineFilled,
+  IconChartAreaLine,
+  IconGraph,
   IconLogin,
   IconLogout,
   IconRefresh,
+  IconRun,
   IconSearch,
   IconUserCircle,
+  IconWalk,
 } from '@tabler/icons-react';
 
 export const icons = {
@@ -17,5 +21,9 @@ export const icons = {
   refresh: IconRefresh,
   search: IconSearch,
   calendar: IconCalendar,
-  training: IconChartAreaLineFilled,
+  training: IconChartAreaLine,
+  graph: IconGraph,
+  ride: IconBike,
+  run: IconRun,
+  walk: IconWalk,
 };

@@ -24,6 +24,7 @@ function NavbarLink({ icon: Icon, label, active, onClick }: NavbarLinkProps) {
 const menuItems = [
   { icon: icons.calendar, label: 'Calendar', url: '/' },
   { icon: icons.training, label: 'Training Plan', url: '/training' },
+  { icon: icons.graph, label: 'Graphs', url: '/graphs' },
 ];
 
 const isAuthenticated = true;

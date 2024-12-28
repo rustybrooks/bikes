@@ -156,6 +156,42 @@ export interface ActivityOut {
   user: number;
 }
 
+export interface ProgressGraphIn {
+  /**
+   * Start date
+   * @format date
+   */
+  start_date?: string | null;
+  /**
+   * End date
+   * @format date
+   */
+  end_date?: string | null;
+  /**
+   * Workout type
+   * @minLength 1
+   */
+  workout_type?: string | null;
+}
+
+export interface ProgressGraphDataPointOut {
+  /**
+   * Timestamp
+   * @format date-time
+   */
+  timestamp: string;
+  /** Time */
+  time: number;
+  /** Distance */
+  distance: number;
+}
+
+export interface ProgressGraphOut {
+  /** Year */
+  year: number;
+  data: ProgressGraphDataPointOut[];
+}
+
 export interface Season {
   /** ID */
   id?: number;
@@ -794,6 +830,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         path: `/activities/${activityId}/`,
         method: 'GET',
         secure: true,
+        format: 'json',
+        ...params,
+      }),
+  };
+  graphs = {
+    /**
+     * No description
+     *
+     * @tags graphs
+     * @name GraphsProgress
+     * @request POST:/graphs/progress/
+     * @secure
+     */
+    graphsProgress: (data: ProgressGraphIn, params: RequestParams = {}) =>
+      this.request<ProgressGraphOut[], any>({
+        path: `/graphs/progress/`,
+        method: 'POST',
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         format: 'json',
         ...params,
       }),

@@ -1,6 +1,7 @@
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/dates/styles.css';
+import '@mantine/charts/styles.css';
 import { Route, Routes } from 'react-router';
 import { AppShell, createTheme, MantineProvider, rem } from '@mantine/core';
 import { Header } from './components/Header';
@@ -10,6 +11,7 @@ import { TrainingPlansManage } from './views/TrainingPlansManage';
 import { StravaCallback } from './views/StravaCallback';
 import { Home } from './views/Home';
 import { Activity } from './views/Activity';
+import { Graphs } from './views/Graphs';
 
 const theme = createTheme({
   //
@@ -174,6 +176,7 @@ export const App = () => {
             <Route path="/activity/:id" element={<Activity />} />
             <Route path="/training/manage" element={<TrainingPlansManage />} />
             <Route path="/training/manage/:command" element={<TrainingPlansManage />} />
+            <Route path="/graphs" element={<Graphs />} />
             <Route path="/strava_callback" element={<StravaCallback />} />
             <Route element={<NoMatch />} />
           </Routes>

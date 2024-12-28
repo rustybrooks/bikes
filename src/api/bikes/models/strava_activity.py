@@ -7,6 +7,12 @@ logger = logging.getLogger(__name__)
 
 
 class StravaActivity(models.Model):
+    class Meta:
+        indexes = [
+            models.Index(fields=["start_datetime_local"]),
+            models.Index(fields=["start_datetime"]),
+        ]
+
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING)
     activity_id = models.BigIntegerField(primary_key=True)
     external_id = models.TextField(null=True)

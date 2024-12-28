@@ -39,6 +39,7 @@ class Command(BaseCommand):
                         if last_act
                         else datetime.datetime(2000, 1, 1)
                     )
+                    last_date = datetime.datetime(2010, 1, 1)
                     print(f"Syncing {user.username} starting at {last_date}")
 
                     try:
