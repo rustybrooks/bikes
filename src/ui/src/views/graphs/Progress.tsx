@@ -1,5 +1,5 @@
 import { AreaChart } from '@mantine/charts';
-import { Container, Group, Loader, SegmentedControl, Stack } from '@mantine/core';
+import { Group, Loader, SegmentedControl, Stack } from '@mantine/core';
 import { DateTime } from 'luxon';
 import { useState } from 'react';
 import { IconBalloon } from '@tabler/icons-react';

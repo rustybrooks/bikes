@@ -1,5 +1,5 @@
 import { Box, Card, Center, Grid, Group, HoverCard, LoadingOverlay, Stack, Text } from '@mantine/core';
-import { IconDeviceUnknown, IconRun, IconWalk, IconReceipt } from '@tabler/icons-react';
+import { IconDeviceUnknown, IconReceipt } from '@tabler/icons-react';
 import { DateTime, Interval } from 'luxon';
 
 import { Link } from 'react-router-dom';
